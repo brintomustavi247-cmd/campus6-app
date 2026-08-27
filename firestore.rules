@@ -1,0 +1,61 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users Profile Collection
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      match /{subcollection}/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Presence Collection for live status
+    match /presence/{document} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == document;
+    }
+
+    // Sessions Collection for focus timer history
+    match /sessions/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+        
+    // Cloud Drive Storage Collections
+    match /drive_files/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null;
+    }
+    match /drive_folders/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null;
+    }
+        
+    // Friendships & Roster Invitations
+    match /friends/{document} {
+      allow read, write: if request.auth != null;
+    }
+    match /friendRequests/{document} {
+      allow read, write: if request.auth != null;
+    }
+    match /friend_requests/{document} {
+      allow read, write: if request.auth != null;
+    }
+        
+    // Collaborative Squad Groups
+    match /groups/{document} {
+      allow read, write: if request.auth != null;
+    }
+        
+    // Real-Time Chat Channels
+    match /chats/{chatId}/messages/{document} {
+      allow read, write: if request.auth != null;
+    }
+    match /messages/{document} {
+      allow read, write: if true;
+    }
+  }
+}

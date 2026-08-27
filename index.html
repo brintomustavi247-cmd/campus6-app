@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="bn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Hind+Siliguri:wght@300;400;500;600;700&family=Lexend:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>CAMPUS 6.0 — Daily Study Engine</title>
+    <style>
+      body, html { margin: 0; padding: 0; background-color: #090C11; color: #ECFDF5; font-family: var(--font-sans), system-ui, -apple-system, sans-serif; }
+      #initial-loader {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: #090C11;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 99999;
+        transition: opacity 0.3s ease-out;
+      }
+      .logo-container {
+        width: 72px; height: 72px;
+        background: linear-gradient(135deg, #064E3B, #047857);
+        border: 2px solid rgba(212, 167, 44, 0.6);
+        border-radius: 20px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 16px;
+        box-shadow: 0 0 25px rgba(4, 120, 87, 0.4);
+        animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .title {
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        margin-bottom: 4px;
+        color: #D4A72C;
+      }
+      .subtitle {
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: #A7F3D0;
+        text-transform: uppercase;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.85; transform: scale(0.97); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="initial-loader">
+      <div class="logo-container" style="background: none; border: none; box-shadow: none; width: auto; height: auto;">
+        <svg viewBox="0 0 100 100" width="64" height="64">
+          <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" fill="none" stroke="rgba(53,214,255,0.3)" stroke-width="2"/>
+          <path d="M 32 25 H 42 V 75 H 32 Z" fill="#0AA8D8"/>
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M 42 25 H 65 C 75 25 80 32 80 40 C 80 48 75 55 65 55 H 42 V 25 Z M 52 47 H 62 C 65 47 68 45 68 40 C 68 35 65 33 62 33 H 52 V 47 Z" fill="#0AA8D8"/>
+          <path d="M 52 58 H 66 L 80 75 H 66 L 52 58 Z" fill="#35D6FF"/>
+        </svg>
+      </div>
+      <div class="title" style="color: #F4F7FA; font-family: 'Orbitron', sans-serif;">RANK<span style="color: #35D6FF">PUSH</span></div>
+      <div class="subtitle" style="color: #0AA8D8; font-family: 'JetBrains Mono', monospace; font-size: 9px;">COMPETITIVE ACADEMIC ENGINE</div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          const loader = document.getElementById('initial-loader');
+          if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 300);
+          }
+        }, 150);
+      });
+    </script>
+  </body>
+</html>

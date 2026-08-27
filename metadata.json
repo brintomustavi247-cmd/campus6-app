@@ -1,0 +1,8 @@
+{
+  "name": "Campus 6.0 Daily Study Engine",
+  "description": "Mobile-first daily study engine and HSC admission preparation assistant for Bangladeshi students.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

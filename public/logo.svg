@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <rect width="1024" height="1024" fill="#090C11"/>
+  <g transform="translate(112, 112) scale(8)">
+    <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" fill="none" stroke="#35D6FF" stroke-width="4" stroke-opacity="0.3"/>
+    <path d="M 32 25 H 42 V 75 H 32 Z" fill="#0AA8D8"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M 42 25 H 65 C 75 25 80 32 80 40 C 80 48 75 55 65 55 H 42 V 25 Z M 52 47 H 62 C 65 47 68 45 68 40 C 68 35 65 33 62 33 H 52 V 47 Z" fill="#0AA8D8"/>
+    <path d="M 52 58 H 66 L 80 75 H 66 L 52 58 Z" fill="#35D6FF"/>
+  </g>
+</svg>
