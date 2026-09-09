@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Mail, Key, User, Phone, BookOpen, ArrowRight, ChevronDown, Loader2 } from 'lucide-react';
+import { Mail, Key, User, Phone, BookOpen, ArrowRight, ChevronDown, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { getAppBaseUrl } from '../utils/authBaseUrl';
 
 interface LoginViewProps {
   onLoginSuccess: (userEmail?: string) => void;
+  onDemoEntry?: () => void;
   onAddToast?: (type: 'success' | 'info' | 'warning' | 'error', message: string, title?: string) => void;
 }
 
@@ -28,6 +29,7 @@ const T = {
     password: 'পাসওয়ার্ড', forgot: 'পাসওয়ার্ড ভুলে গেছেন?',
     loginBtn: 'লগইন করুন', or: 'অথবা',
     google: 'Google দিয়ে লগইন করুন', connecting: 'সংযোগ হচ্ছে...',
+    demo: 'ডেমো মোডে ঘুরে দেখুন', demoHint: 'লগইন ছাড়াই অ্যাপ এক্সপ্লোর করুন',
     basicInfo: 'মৌলিক তথ্য', fullName: 'পুরো নাম', namePh: 'আপনার নাম',
     confirmPass: 'পাসওয়ার্ড নিশ্চিত করুন', personal: 'ব্যক্তিগত তথ্য',
     phone: 'মোবাইল নম্বর', gender: 'লিঙ্গ', genderPh: 'লিঙ্গ নির্বাচন করুন',
@@ -55,6 +57,7 @@ const T = {
     password: 'Password', forgot: 'Forgot password?',
     loginBtn: 'Sign In', or: 'OR',
     google: 'Continue with Google', connecting: 'Connecting...',
+    demo: 'Explore Demo Mode', demoHint: 'Try the app without signing in',
     basicInfo: 'Basic Info', fullName: 'Full Name', namePh: 'Your name',
     confirmPass: 'Confirm Password', personal: 'Personal & Contact',
     phone: 'Phone Number', gender: 'Gender', genderPh: 'Select gender',
@@ -192,10 +195,9 @@ const CustomSelect = ({
 };
 
 /* ═══════════ LOGIN VIEW ═══════════ */
-export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onAddToast }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onDemoEntry, onAddToast }) => {
   const appBaseUrl = getAppBaseUrl();
 
-  /* Language — app-এর সাথে shared (campus6_language) */
   const [lang, setLang] = useState<Lang>(() => {
     try {
       return localStorage.getItem('campus6_language') === 'en' ? 'en' : 'bn';
@@ -365,15 +367,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onAddToast
               >
                 {t.loginBtn} <ArrowRight className="w-4 h-4" />
               </button>
-              <div className="relative py-6 flex items-center justify-center">
+
+              {/* ── OR divider ── */}
+              <div className="relative py-4 flex items-center justify-center">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
                 <span className="relative bg-[#12151D] px-4 text-[10px] tracking-widest" style={{ fontFamily: lblFont, color: '#A4AFBC' }}>{t.or}</span>
               </div>
+
               {googleError && (
                 <div className="text-red-500 text-xs font-bold text-center mb-4 tracking-wider animate-in fade-in" style={{ fontFamily: inputFont }}>
                   {googleError}
                 </div>
               )}
+
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
@@ -400,6 +406,24 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onAddToast
                   </>
                 )}
               </button>
+
+              {/* ── 🎯 DEMO ENTRY BUTTON ── */}
+              <div className="relative py-3 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onDemoEntry ? onDemoEntry() : onLoginSuccess()}
+                className="w-full py-3.5 bg-gradient-to-r from-[#0AA8D8]/15 to-[#35D6FF]/15 hover:from-[#0AA8D8]/25 hover:to-[#35D6FF]/25 border border-[#35D6FF]/30 hover:border-[#35D6FF]/60 text-[#35D6FF] font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(53,214,255,0.25)] rounded-xl flex items-center justify-center gap-2 group"
+                style={{ fontFamily: lblFont, letterSpacing: '1px' }}
+              >
+                <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                <span>{t.demo}</span>
+              </button>
+              <p className="text-center text-[10px] text-gray-500 -mt-2" style={{ fontFamily: inputFont }}>
+                {t.demoHint}
+              </p>
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-6 animate-in fade-in duration-500">
@@ -502,6 +526,20 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onAddToast
                 style={{ fontFamily: lblFont, background: 'linear-gradient(135deg, #DC143C 0%, #9E0E29 100%)' }}
               >
                 {t.registerBtn} <ArrowRight className="w-4 h-4" />
+              </button>
+
+              {/* Demo option on register page too */}
+              <div className="relative py-2 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onDemoEntry ? onDemoEntry() : onLoginSuccess()}
+                className="w-full py-3 bg-transparent hover:bg-[#0AA8D8]/10 border border-[#35D6FF]/25 hover:border-[#35D6FF]/50 text-[#35D6FF]/80 hover:text-[#35D6FF] text-sm font-bold transition-all duration-300 rounded-xl flex items-center justify-center gap-2"
+                style={{ fontFamily: lblFont }}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {t.demo}
               </button>
             </form>
           )}

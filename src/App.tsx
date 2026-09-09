@@ -12,48 +12,28 @@
  * - Tab persistence (page restored after refresh — with auth-loop protection).
  *
  * ============================================================================
- * VERSION 10.0.0 — AUTH LOOP + STAT-WIPE OVERHAUL
+ * VERSION 11.0.0 — FIRST-VISIT LOGIN FLOW + DEMO ENTRY
  * ============================================================================
- *  FIX #1  GOOGLE-LOGIN LOOP (root cause):
- *          `activePage === 'login'` was PERSISTED to localStorage. Google OAuth
- *          performs a FULL-PAGE REDIRECT, so the app cold-booted with the stale
- *          'login' page restored, and NOTHING transitioned off it — the only
- *          escape was LoginView's popup-flow callback. Session existed; UI said
- *          login; round and round forever.
- *          → New rule #1: NEVER persist 'login' as the active page.
- *          → New rule #2: the moment onAuthStateChange confirms a real session
- *            (INITIAL_SESSION / SIGNED_IN / USER_UPDATED with a user),
- *            activePage is PROMOTED off 'login' unconditionally.
- *          (Deliberate logout → refresh now lands on the demo dashboard instead
- *           of the login screen — cosmetic tradeoff, loop eliminated.)
+ *  NEW #1  FIRST VISIT → LOGIN PAGE:
+ *          When a student opens the app for the first time (no saved page,
+ *          no session), the login screen appears. Previously it jumped to
+ *          demo dashboard, hiding the real Google login flow.
+ *          → `loadInitialActivePage` now returns 'login' when nothing is saved.
+ *          → 'login' is STILL never persisted (Fix #1 rule 1 preserved),
+ *            so the auth-loop protection remains intact.
+ *          → Deliberate logout → refresh now lands on login screen (matches
+ *            real-world expectation — "log out" = "see login again").
  *
- *  FIX #2  STAT WIPE ON EVERY AUTH EVENT (leaderboard destroyer):
- *          The old upsert wrote total_study_time:0, xp:0, rank_score:0,
- *          current_rank, current_status with ignoreDuplicates:false — and ran
- *          on TOKEN_REFRESHED too (≈hourly + every tab refocus). Merely OPENING
- *          the app zeroed the student's progress; different devices/refocuses
- *          produced permanently disagreeing leaderboards.
- *          → Identity sync now routes through createUserInSupabaseIfNotExists()
- *            (ignoreDuplicates:true) which CREATES the row if absent and NEVER
- *            touches existing stat columns. Stats are owned exclusively by
- *            TimerContext → services/db increment pipeline.
+ *  NEW #2  DEMO ENTRY BUTTON:
+ *          LoginView now exposes a "Explore Demo" button. Clicking it calls
+ *          onLoginSuccess() without any auth — App promotes the page to
+ *          dashboard and the student explores in demo mode. The default
+ *          demo profile stays intact (no state reset on demo entry).
  *
- *  FIX #3  EVENT NOISE FILTER:
- *          Handler processes only INITIAL_SESSION / SIGNED_IN / USER_UPDATED /
- *          SIGNED_OUT. TOKEN_REFRESHED, PASSWORD_RECOVERY etc. are ignored —
- *          prevents redundant fetch/upsert storms on flaky mobile connections.
- *
- *  FIX #4  SPINNER DEADLOCKS:
- *          isAuthLoading is cleared on EVERY terminal path — including catch
- *          branches and the no-session case of getSession().
- *
- *  FIX #5  CLEANUPS: removed duplicated saveLocal/setProfile calls and the
- *          doubled upsert block; auth subscription now subscribes ONCE
- *          (deps []) and computes the current day internally instead of
- *          tearing down/re-subscribing on every midnight rollover.
+ *  (All prior fixes #1–#5 from v10.0.0 are preserved verbatim.)
  *
  * @author CAMPUS 6.0 Team
- * @version 10.0.0
+ * @version 11.0.0
  * ============================================================================
  */
 
@@ -173,15 +153,28 @@ const getStoredLanguage = (): PreferredLanguage => {
 };
 
 /**
- * FIX #1 (rule 1): 'login' must NEVER come out of storage as the initial page.
- * (Writes are also blocked below; this sanitizes legacy values.)
+ * 🎯 NEW #1 (v11): First-visit login flow.
+ *
+ * - If localStorage has a valid non-login page saved → restore it
+ *   (returning user lands where they left off).
+ * - If nothing is saved (first visit) OR legacy 'login' value was stored
+ *   (defensive — rule 1 says we never write it, but clean up anyway) →
+ *   show the LOGIN screen.
+ *
+ * NOTE: 'login' is NEVER persisted below, so the auth-loop protection
+ * (Fix #1 rule 1 from v10) remains fully intact. A full-page OAuth redirect
+ * cold-boots, finds no saved page, and shows login — then the auth listener
+ * promotes to dashboard as soon as the session confirms.
  */
 const loadInitialActivePage = (): PageId => {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.ACTIVE_PAGE) as PageId | null;
-    return saved && saved !== 'login' ? saved : 'dashboard';
+    if (saved && saved !== 'login') {
+      return saved;
+    }
+    return 'login';
   } catch {
-    return 'dashboard';
+    return 'login';
   }
 };
 
@@ -268,7 +261,6 @@ export function App() {
 
   // ========================================================================
   // SHARED: RESET LOCAL USER STATE TO DEMO MODE
-  // Computes the day internally so callers need no time dependencies.
   // ========================================================================
 
   const resetLocalUserState = useCallback(() => {
@@ -289,16 +281,6 @@ export function App() {
   // ========================================================================
 
   useEffect(() => {
-    /**
-     * CORE: Sync Supabase user → local state + DB IDENTITY ROW.
-     *
-     * METADATA EXTRACTION PRIORITY CHAIN:
-     * 1. user_metadata.full_name (Google OAuth)
-     * 2. user_metadata.name
-     * 3. user_metadata.user_name
-     * 4. email prefix
-     * 5. 'Student'
-     */
     const syncSupabaseUser = async (user: any, event?: string) => {
       try {
         if (!user) {
@@ -311,13 +293,11 @@ export function App() {
         const isNewUser = cachedUid !== user.id;
         const neverOnboarded = !existingProfile.isOnboarded;
 
-        // Reset state for genuinely-new or un-onboarded accounts.
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && (isNewUser || neverOnboarded)) {
           console.log('[App] New or un-onboarded user detected, resetting state...');
           resetLocalUserState();
         }
 
-        // Extract user metadata
         const metadata = user.user_metadata || {};
         const googleName =
           metadata.full_name ||
@@ -340,7 +320,6 @@ export function App() {
           userId: user.id,
         });
 
-        // Update local React state (single pass — duplicates removed, Fix #5)
         const currentProfile = getLocalUserProfile();
         const updatedProfile: UserProfile = {
           ...currentProfile,
@@ -357,14 +336,6 @@ export function App() {
         saveLocalOnlyUserProfile(updatedProfile);
         setProfile(updatedProfile);
 
-        /**
-         * ⭐ FIX #2 — THE STAT-WIPE FIX:
-         * Identity creation ONLY. This helper upserts with ignoreDuplicates:true,
-         * so for EXISTING students this is a guaranteed no-op at the database —
-         * their total_study_time / xp / rank_score / current_status are never
-         * written from here again. Only TimerContext's increment pipeline may
-         * touch stats.
-         */
         const created = await createUserInSupabaseIfNotExists({
           id: user.id,
           full_name: googleName,
@@ -379,11 +350,9 @@ export function App() {
         }
 
         /**
-         * ⭐ FIX #1 (rule 2) — LOGIN-LOOP KILLER:
-         * A live session is CONFIRMED (we hold the user object). If the app
-         * booted onto the stale persisted 'login' page (or sat there after an
-         * OAuth full-page redirect), promote it NOW. Non-login pages are left
-         * exactly where the student left them (tab persistence preserved).
+         * FIX #1 (rule 2) — LOGIN-LOOP KILLER:
+         * A live session is CONFIRMED. If the app booted onto 'login'
+         * (first visit or stale post-OAuth), promote it NOW.
          */
         setActivePage((prev) => {
           if (prev !== 'login') return prev;
@@ -394,18 +363,14 @@ export function App() {
       } catch (error) {
         console.error('[App] Critical error in syncSupabaseUser:', error);
       } finally {
-        // ⭐ FIX #4 — loading gate MUST clear on every terminal path,
-        // success or failure, or the spinner deadlocks (fake "login loop").
         setIsAuthLoading(false);
       }
     };
 
-    // Subscribe to auth state changes (once — no per-midnight teardown, Fix #5)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`[App] Auth event: ${event}`, session?.user?.id || 'no user');
 
-        // Deliberate logout from ANY surface → clean slate + login screen.
         if (event === 'SIGNED_OUT') {
           resetLocalUserState();
           setActivePage('login');
@@ -413,15 +378,12 @@ export function App() {
           return;
         }
 
-        // FIX #3 — ignore noise events (TOKEN_REFRESHED etc.). Sync runs only
-        // when identity meaningfully appeared/changed.
         if (!SYNC_ELIGIBLE_EVENTS.has(event)) return;
 
         await syncSupabaseUser(session?.user, event);
       },
     );
 
-    // Check for existing session on mount
     void supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
@@ -430,13 +392,11 @@ export function App() {
           void syncSupabaseUser(session.user, 'INITIAL_SESSION');
         } else {
           console.log('[App] No existing session found');
-          // ⭐ FIX #4 — the no-session branch previously forgot to clear this.
           setIsAuthLoading(false);
         }
       })
       .catch((err) => {
         console.error('[App] getSession failed:', err);
-        // ⭐ FIX #4 — a rejected getSession must never deadlock the spinner.
         setIsAuthLoading(false);
       });
 
@@ -455,9 +415,8 @@ export function App() {
       }
 
       resetLocalUserState();
-      // Show the login screen immediately (NOT persisted — Fix #1: after a
-      // refresh the auth-less app resolves to the demo dashboard, and if a
-      // session somehow survived, the auth handler promotes straight back in).
+      // 🎯 NEW #1: After logout → login screen (NOT persisted).
+      // On refresh the auth-less app will resolve to login again (loadInitialActivePage).
       setActivePage('login');
       console.log('[App] User logged out successfully');
     } catch (error) {
@@ -562,17 +521,13 @@ export function App() {
       finalProfile = { ...updated, isOnboarded: true };
     }
 
-    // Update local state immediately
     setProfile(finalProfile);
     saveLocalUserProfile(finalProfile);
 
-    // Update language preference
     if (finalProfile.preferredLanguage) {
       setPreferredLanguage(finalProfile.preferredLanguage);
     }
 
-    // Sync IDENTITY fields to Supabase users table.
-    // ⭐ FIX #2 contract: no total_study_time / xp / rank / status here — EVER.
     if (finalProfile.uid && finalProfile.uid !== DEFAULT_DEMO_USER.uid) {
       try {
         const { error } = await supabase.from('users').update({
@@ -582,7 +537,6 @@ export function App() {
         }).eq('id', finalProfile.uid);
 
         if (error) {
-          // Row may not exist yet (fresh onboarding edge) → create identity.
           const ok = await createUserInSupabaseIfNotExists({
             id: finalProfile.uid,
             full_name: finalProfile.displayName || finalProfile.nickname || undefined,
@@ -611,18 +565,13 @@ export function App() {
   }, []);
 
   // ========================================================================
-  // TIMER SESSION COMPLETE HANDLER (SINGLE WRITER PATTERN)
-  //
-  // Saves locally + updates the day card ONLY. Cloud stats are owned
-  // exclusively by TimerContext → services/db increment pipeline.
+  // TIMER SESSION COMPLETE HANDLER
   // ========================================================================
 
   const handleSessionComplete = useCallback(async (session: TimerSession) => {
-    // 1. Save locally (backup + offline support)
     saveLocalTimerSession(session);
     setTimerSessions(getLocalTimerSessions());
 
-    // 2. Update study hours in today's progress
     const currentProgress = getLocalDailyProgress(session.dateKey);
     const addedHours = parseFloat((session.durationMinutes / 60).toFixed(2));
     const updatedProgress: DailyProgress = {
@@ -636,10 +585,8 @@ export function App() {
       setDailyProgress(updatedProgress);
     }
 
-    // 3. Success toast
     addToast('success', `🎉 মাশাল্লাহ! ${session.durationMinutes} মিনিটের সেশন সফলভাবে সম্পন্ন হয়েছে!`);
 
-    // 4. Cloud write happened in TimerContext (chunk pipeline).
     console.log('[App] Session saved locally. DB write handled by TimerContext.');
   }, [selectedDateKey, addToast]);
 
@@ -677,6 +624,18 @@ export function App() {
   }, [selectedDateKey]);
 
   // ========================================================================
+  // 🎯 NEW #2: DEMO ENTRY HANDLER (LoginView's "Explore Demo" button)
+  // Does NOT reset local state — preserves default demo profile.
+  // Promotes 'login' → 'dashboard' immediately.
+  // ========================================================================
+
+  const handleDemoEntry = useCallback(() => {
+    console.log('[App] Demo entry — no auth required');
+    setActivePage('dashboard');
+    addToast('info', 'ডেমো মোডে স্বাগতম! আপনার সব progress লোকালি সেভ হবে।', 'Demo Mode');
+  }, [addToast]);
+
+  // ========================================================================
   // AUTH CALLBACK ROUTE (must precede all gates)
   // ========================================================================
 
@@ -689,7 +648,7 @@ export function App() {
   }
 
   // ========================================================================
-  // AUTH LOADING GATE (race-condition shield)
+  // AUTH LOADING GATE
   // ========================================================================
 
   if (isAuthLoading) {
@@ -707,9 +666,10 @@ export function App() {
           onLoginSuccess={async () => {
             console.log('[App] Login success callback triggered');
             await new Promise(resolve => setTimeout(resolve, CONFIG.SYNC_RETRY_DELAY_MS));
-            setActivePage('dashboard'); // promotion also enforced by auth listener (Fix #1)
-            addToast('success', 'স্বগতম! আপনার প্রোফাইল সিঙ্ক হয়েছে।', 'Login Success');
+            setActivePage('dashboard');
+            addToast('success', 'স্বাগতম! আপনার প্রোফাইল সিঙ্ক হয়েছে।', 'Login Success');
           }}
+          onDemoEntry={handleDemoEntry}
           onAddToast={addToast}
         />
       </Suspense>
@@ -848,7 +808,6 @@ export function App() {
           />
         )}
 
-        {/* Onboarding Wizard */}
         <OnboardingWizard
           isOpen={isOnboardingOpen}
           initialProfile={profile}
@@ -859,7 +818,6 @@ export function App() {
           }}
         />
 
-        {/* Social Share Progress Modal */}
         <ShareProgressModal
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
