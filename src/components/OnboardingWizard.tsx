@@ -152,9 +152,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     <button
                       key={l.id}
                       onClick={() => setPreferredLanguage(l.id as PreferredLanguage)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all min-h-11 ${
                         preferredLanguage === l.id
-                          ? 'bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent text-text-primary shadow-md'
+                          ? 'bg-primary hover:bg-primary-hover border-transparent text-text-primary shadow-md'
                           : 'bg-surface-muted border-border text-text-secondary'
                       }`}
                     >
@@ -175,9 +175,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     <button
                       key={t.id}
                       onClick={() => setTheme(t.id as AppTheme)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all min-h-11 ${
                         theme === t.id
-                          ? 'bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent text-text-primary shadow-md'
+                          ? 'bg-primary hover:bg-primary-hover border-transparent text-text-primary shadow-md'
                           : 'bg-surface-muted border-border text-text-secondary'
                       }`}
                     >
@@ -242,7 +242,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
           {step > 1 ? (
             <button
               onClick={() => setStep(step - 1)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border text-text-muted text-xs font-bold hover:bg-red-900/40 min-h-[44px]"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border text-text-muted text-xs font-bold hover:bg-red-900/40 min-h-11"
             >
               <ArrowLeft className="w-4 h-4" />
               পেছনে
@@ -252,7 +252,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
           {step < 3 ? (
             <button
               onClick={() => setStep(step + 1)}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent text-text-primary text-xs font-bold shadow-lg min-h-[44px] ml-auto"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover border border-transparent text-text-primary text-xs font-bold shadow-lg min-h-11 ml-auto"
             >
               পরবর্তী step
               <ArrowRight className="w-4 h-4" />
@@ -260,7 +260,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
           ) : (
             <button
               onClick={handleFinish}
-              className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] text-xs font-extrabold shadow-xl min-h-[44px] ml-auto"
+              className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] text-xs font-extrabold shadow-xl min-h-11 ml-auto"
             >
               <CheckCircle2 className="w-4 h-4" />
               পড়ালেখা শুরু করো

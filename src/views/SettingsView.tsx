@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile, AcademicGroup, PreferredLanguage, AppTheme } from '../types';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { PageId } from '../components/Sidebar';
 import { clearAllLocalData, seedDemoData, flushPendingSyncs } from '../utils/storageEngine';
 import { 
   Settings, 
@@ -8,11 +9,6 @@ import {
   Database, 
   Trash2, 
   RefreshCw, 
-  CheckCircle2, 
-  Moon, 
-  Sun, 
-  Globe, 
-  Target, 
   Code,
   LogIn,
   LogOut
@@ -22,7 +18,7 @@ interface SettingsViewProps {
   profile: UserProfile;
   onUpdateProfile: (updatedProfile: UserProfile) => void;
   onRefreshAppState: () => void;
-  onNavigate: (page: any) => void;
+  onNavigate: (page: PageId) => void;
   onAddToast: (type: 'success' | 'info' | 'warning' | 'error', message: string) => void;
   onLogout: () => void;
 }
@@ -217,7 +213,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                key={l.id}
                type="button"
                onClick={() => setPreferredLanguage(l.id as PreferredLanguage)}
-               className={`p-2.5 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${
+               className={`p-2.5 rounded-xl border text-xs font-bold transition-all min-h-11 ${
                  preferredLanguage === l.id
                    ? 'bg-gold hover:bg-[#b88e22] text-[#0F111A] shadow-md border-transparent'
                    : 'bg-surface-muted border-border text-text-secondary hover:border-gold/50'

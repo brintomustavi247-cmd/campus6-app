@@ -56,9 +56,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all min-h-[44px] ${
+              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all min-h-11 ${
                 isActive
-                  ? 'bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent text-text-primary shadow-lg shadow-red-600/20 border border-gold'
+                  ? 'bg-primary hover:bg-primary-hover text-text-primary shadow-lg shadow-red-600/20 border border-gold'
                   : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
               }`}
             >

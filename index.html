@@ -8,69 +8,242 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Hind+Siliguri:wght@300;400;500;600;700&family=Lexend:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>CAMPUS 6.0 — Daily Study Engine</title>
     <style>
-      body, html { margin: 0; padding: 0; background-color: #090C11; color: #ECFDF5; font-family: var(--font-sans), system-ui, -apple-system, sans-serif; }
+      /* ========== BASE RESET (scoped, safe) ========== */
+      *, *::before, *::after { box-sizing: border-box; }
+
+      body, html {
+        margin: 0;
+        padding: 0;
+        background-color: #090C11;
+        color: #ECFDF5;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      }
+
+      body.loading { overflow: hidden; }
+
+      /* Flex-overflow safety for app UI */
+      #root * { min-width: 0; }
+
+      /* ========== Ultra-wide screen safety ========== */
+      @media (min-width: 1800px) {
+        #root {
+          max-width: 1760px;
+          margin: 0 auto;
+          box-shadow: 0 0 80px rgba(0, 0, 0, 0.6);
+        }
+      }
+
+      /* ========== LOADING SCREEN ========== */
       #initial-loader {
         position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background-color: #090C11;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        inset: 0;
+        background: radial-gradient(ellipse at center, #0D1117 0%, #090C11 70%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
         z-index: 99999;
-        transition: opacity 0.3s ease-out;
+        transition: opacity 0.5s ease-out;
       }
-      .logo-container {
-        width: 72px; height: 72px;
-        background: linear-gradient(135deg, #064E3B, #047857);
-        border: 2px solid rgba(212, 167, 44, 0.6);
-        border-radius: 20px;
-        display: flex; align-items: center; justify-content: center;
-        margin-bottom: 16px;
-        box-shadow: 0 0 25px rgba(4, 120, 87, 0.4);
-        animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+      .loader-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 20px;
       }
-      .title {
-        font-size: 20px;
-        font-weight: 800;
-        letter-spacing: 2px;
-        margin-bottom: 4px;
-        color: #D4A72C;
+
+      .logo-box {
+        position: relative;
+        width: 250px;
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
       }
-      .subtitle {
+
+      .logo-glow {
+        position: absolute;
+        inset: -25px;
+        background: radial-gradient(circle, rgba(53, 214, 255, 0.18) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: pulse 2s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      .logo-box svg,
+      .logo-box img {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 0 25px rgba(53, 214, 255, 0.25));
+        animation: scaleIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .brand-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 34px;
+        font-weight: 900;
+        letter-spacing: 4px;
+        color: #F4F7FA;
+        text-shadow: 0 0 20px rgba(53, 214, 255, 0.35);
+        animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+      }
+
+      .t-blue  { color: #29ABE2; }
+      .t-green { color: #7DC242; }
+      .t-red   { color: #E23B4E; }
+
+      .brand-subtitle {
+        margin-top: 8px;
+        font-family: 'JetBrains Mono', monospace;
         font-size: 11px;
-        letter-spacing: 2px;
-        color: #A7F3D0;
+        font-weight: 500;
+        letter-spacing: 5px;
         text-transform: uppercase;
+        color: #0AA8D8;
+        animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
       }
-      @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.85; transform: scale(0.97); }
+
+      .loader-progress {
+        width: 200px;
+        height: 4px;
+        margin-top: 36px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+        animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+      }
+
+      .loader-progress::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 40%;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #0AA8D8, #35D6FF);
+        animation: progress 1.4s ease-in-out infinite;
+      }
+
+      /* ========== KEYFRAMES ========== */
+      @keyframes pulse    { 0%, 100% { opacity: .6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+      @keyframes scaleIn  { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
+      @keyframes slideUp  { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
+
+      /* ========== MOBILE ========== */
+      @media (max-width: 480px) {
+        .logo-box { width: 200px; height: 160px; }
+        .brand-title { font-size: 26px; letter-spacing: 3px; }
+        .brand-subtitle { font-size: 9px; letter-spacing: 3px; }
       }
     </style>
   </head>
-  <body>
+  <body class="loading">
     <div id="initial-loader">
-      <div class="logo-container" style="background: none; border: none; box-shadow: none; width: auto; height: auto;">
-        <svg viewBox="0 0 100 100" width="64" height="64">
-          <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" fill="none" stroke="rgba(53,214,255,0.3)" stroke-width="2"/>
-          <path d="M 32 25 H 42 V 75 H 32 Z" fill="#0AA8D8"/>
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M 42 25 H 65 C 75 25 80 32 80 40 C 80 48 75 55 65 55 H 42 V 25 Z M 52 47 H 62 C 65 47 68 45 68 40 C 68 35 65 33 62 33 H 52 V 47 Z" fill="#0AA8D8"/>
-          <path d="M 52 58 H 66 L 80 75 H 66 L 52 58 Z" fill="#35D6FF"/>
-        </svg>
+      <div class="loader-content">
+        <div class="logo-box" id="logoBox">
+          <div class="logo-glow"></div>
+          <!-- ✅ INLINE SVG LOGO — external file লাগবে না, কখনো broken হবে না -->
+          <svg id="inlineLogo" viewBox="0 0 260 210" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="gSilver" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#FDFDFD"/>
+                <stop offset="55%" stop-color="#C7CED6"/>
+                <stop offset="100%" stop-color="#8E99A4"/>
+              </linearGradient>
+            </defs>
+            <!-- Blue circuits (left) -->
+            <g stroke="#29ABE2" stroke-width="4" fill="none" stroke-linecap="round">
+              <path d="M28 60 h22 l14 14"/><path d="M22 86 h30 l12 12"/>
+              <path d="M30 112 h26 l10 10"/><path d="M40 136 h20 l8 8"/>
+            </g>
+            <g fill="#29ABE2">
+              <circle cx="26" cy="60" r="5"/><circle cx="20" cy="86" r="5"/>
+              <circle cx="28" cy="112" r="5"/><circle cx="38" cy="136" r="5"/>
+            </g>
+            <!-- Red circuits (right) -->
+            <g stroke="#E23B4E" stroke-width="4" fill="none" stroke-linecap="round">
+              <path d="M232 60 h-22 l-14 14"/><path d="M238 86 h-30 l-12 12"/>
+              <path d="M230 112 h-26 l-10 10"/><path d="M220 136 h-20 l-8 8"/>
+            </g>
+            <g fill="#E23B4E">
+              <circle cx="234" cy="60" r="5"/><circle cx="240" cy="86" r="5"/>
+              <circle cx="232" cy="112" r="5"/><circle cx="222" cy="136" r="5"/>
+            </g>
+            <!-- Center tower -->
+            <polygon points="130,8 154,22 154,95 106,95 106,22" fill="url(#gSilver)"/>
+            <polygon points="130,8 154,22 130,36 106,22" fill="#F1F5F9"/>
+            <g fill="#64748B" opacity=".5">
+              <rect x="117" y="42" width="5" height="46"/>
+              <rect x="128" y="42" width="5" height="46"/>
+              <rect x="139" y="42" width="5" height="46"/>
+            </g>
+            <!-- Side towers -->
+            <polygon points="84,48 104,40 104,118 84,126" fill="url(#gSilver)"/>
+            <polygon points="176,48 156,40 156,118 176,126" fill="url(#gSilver)"/>
+            <g fill="#64748B" opacity=".5">
+              <rect x="89" y="54" width="4" height="8"/><rect x="96" y="54" width="4" height="8"/>
+              <rect x="89" y="68" width="4" height="8"/><rect x="96" y="68" width="4" height="8"/>
+              <rect x="89" y="82" width="4" height="8"/><rect x="96" y="82" width="4" height="8"/>
+              <rect x="160" y="54" width="4" height="8"/><rect x="167" y="54" width="4" height="8"/>
+              <rect x="160" y="68" width="4" height="8"/><rect x="167" y="68" width="4" height="8"/>
+              <rect x="160" y="82" width="4" height="8"/><rect x="167" y="82" width="4" height="8"/>
+            </g>
+            <!-- Open book -->
+            <path d="M58 134 Q95 122 130 142 Q165 122 202 134 L189 156 Q160 146 130 164 Q100 146 71 156 Z" fill="url(#gSilver)"/>
+            <path d="M54 146 Q95 138 128 158 L130 164 Q100 146 71 156 Z" fill="#7DC242"/>
+            <path d="M206 146 Q165 138 132 158 L130 164 Q160 146 189 156 Z" fill="#7B4FBF"/>
+            <!-- Big 6 -->
+            <text x="130" y="130" text-anchor="middle" font-family="Orbitron, sans-serif" font-size="62" font-weight="700" fill="url(#gSilver)">6</text>
+          </svg>
+        </div>
+        <div class="brand-title">CAMPUS <span class="t-blue">6</span><span class="t-green">.</span><span class="t-red">0</span></div>
+        <div class="brand-subtitle">Daily Study Engine</div>
+        <div class="loader-progress"></div>
       </div>
-      <div class="title" style="color: #F4F7FA; font-family: 'Orbitron', sans-serif;">RANK<span style="color: #35D6FF">PUSH</span></div>
-      <div class="subtitle" style="color: #0AA8D8; font-family: 'JetBrains Mono', monospace; font-size: 9px;">COMPETITIVE ACADEMIC ENGINE</div>
     </div>
+
     <div id="root"></div>
+
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      window.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-          const loader = document.getElementById('initial-loader');
-          if (loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => loader.remove(), 300);
+      (function () {
+        /* 🎁 AUTO-UPGRADE: সার্ভার /logo.png serve করলে আসল PNG-তে switch হয়ে যাবে */
+        var test = new Image();
+        test.onload = function () {
+          var box = document.getElementById('logoBox');
+          var inline = document.getElementById('inlineLogo');
+          if (box && inline) {
+            inline.remove();
+            test.id = 'inlineLogo';
+            test.alt = 'CAMPUS 6.0';
+            box.appendChild(test);
+            console.log('[Loader] Real logo.png detected — switched to PNG');
           }
-        }, 150);
-      });
+        };
+        test.src = '/logo.png?v=3';
+
+        /* Loader fade-out + remove */
+        window.addEventListener('DOMContentLoaded', function () {
+          setTimeout(function () {
+            var loader = document.getElementById('initial-loader');
+            if (loader) {
+              loader.style.opacity = '0';
+              setTimeout(function () {
+                loader.remove();
+                document.body.classList.remove('loading');
+              }, 500);
+            }
+          }, 1800);
+        });
+      })();
     </script>
   </body>
 </html>
