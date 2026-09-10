@@ -245,11 +245,13 @@ const OnlineDot: React.FC<{
 interface PodiumCardProps {
   player: RankedPlayer;
   rank: number;
+  metric: 'xp' | 'study';
 }
 
 const PodiumCard: React.FC<PodiumCardProps> = ({
   player,
   rank,
+  metric,
 }) => {
   const getRankConfig = () => {
     switch (rank) {
@@ -297,7 +299,9 @@ const PodiumCard: React.FC<PodiumCardProps> = ({
   };
 
   const config = getRankConfig();
-  const formattedScore = formatStudyTime(Number(player.studyTime || 0));
+  const formattedScore = metric === 'xp'
+    ? `${player.xp.toLocaleString()} XP`
+    : formatStudyTime(Number(player.studyTime || 0));
   const avatarSrc = getAvatarUrl(player.name, player.avatar);
 
   return (
@@ -401,6 +405,7 @@ interface ListItemProps {
   player: RankedPlayer;
   rank: number;
   isCurrentUser?: boolean;
+  metric: 'xp' | 'study'; // NEW
   onClick?: () => void;
 }
 
@@ -408,6 +413,7 @@ const ListItem: React.FC<ListItemProps> = ({
   player,
   rank,
   isCurrentUser = false,
+  metric,
   onClick,
 }) => {
   const getTrendIcon = () => {
@@ -442,7 +448,9 @@ const ListItem: React.FC<ListItemProps> = ({
     return null;
   };
 
-  const formattedScore = formatStudyTime(Number(player.studyTime || 0));
+  const formattedScore = metric === 'xp'
+    ? `${player.xp.toLocaleString()} XP`
+    : formatStudyTime(Number(player.studyTime || 0));
   const avatarSrc = getAvatarUrl(player.name, player.avatar);
 
   return (
@@ -579,6 +587,7 @@ interface FloatingUserRankProps {
   player: RankedPlayer;
   rank: number;
   isLive: boolean;
+  metric: 'xp' | 'study'; // NEW
   hasActiveTimer?: boolean;
   currentTask?: string;
 }
@@ -587,12 +596,15 @@ const FloatingUserRank: React.FC<FloatingUserRankProps> = ({
   player,
   rank,
   isLive = false,
+  metric,
   hasActiveTimer = false,
   currentTask,
 }) => {
   const displayName = player.username || player.name || 'You';
   const avatarSrc = getAvatarUrl(displayName, player.avatar);
-  const formattedScore = formatStudyTime(Number(player.studyTime || 0));
+  const formattedScore = metric === 'xp'
+    ? `${player.xp.toLocaleString()} XP`
+    : formatStudyTime(Number(player.studyTime || 0));
 
   return (
     <div
@@ -1328,23 +1340,24 @@ export const EsportsRanking: React.FC = () => {
             className="flex flex-row flex-nowrap justify-center items-end gap-4 md:gap-6 lg:gap-8 px-4 md:px-6 lg:px-8 py-6 md:py-8 pb-10"
             style={{ borderBottom: `1px solid ${COLORS.border}` }}
           >
-            {top3Players.length >= 2 && <PodiumCard player={top3Players[1]} rank={2} />}
-            {top3Players.length >= 1 && <PodiumCard player={top3Players[0]} rank={1} />}
-            {top3Players.length >= 3 && <PodiumCard player={top3Players[2]} rank={3} />}
+          {top3Players.length >= 2 && <PodiumCard player={top3Players[1]} rank={2} metric={metric} />}
+{top3Players.length >= 1 && <PodiumCard player={top3Players[0]} rank={1} metric={metric} />}
+{top3Players.length >= 3 && <PodiumCard player={top3Players[2]} rank={3} metric={metric} />}
           </div>
         )}
 
         {/* Rank 4+ List */}
         <div className="px-4 md:px-6 lg:px-8 flex flex-col gap-2 mt-2 max-w-3xl mx-auto w-full">
-          {restPlayers.map((player) => (
-            <ListItem
-              key={player.id}
-              player={player}
-              rank={player.displayRank}
-              isCurrentUser={uid ? player.id === uid : false}
-              onClick={() => setSelectedUser(player)}
-            />
-          ))}
+       {restPlayers.map((player) => (
+  <ListItem
+    key={player.id}
+    player={player}
+    rank={player.displayRank}
+    metric={metric}
+    isCurrentUser={uid ? player.id === uid : false}
+    onClick={() => setSelectedUser(player)}
+  />
+))}
 
           {/* Empty State */}
           {restPlayers.length === 0 && top3Players.length > 0 && (
@@ -1400,13 +1413,14 @@ export const EsportsRanking: React.FC = () => {
 
       {/* Floating User Rank Card */}
       {currentUserData && (
-        <FloatingUserRank
-          player={currentUserData}
-          rank={currentUserRank}
-          isLive={currentUserData.isLive || false}
-          hasActiveTimer={currentUserData._hasActiveTimer || false}
-          currentTask={currentUserData.currentTask}
-        />
+    <FloatingUserRank
+  player={currentUserData}
+  rank={currentUserRank}
+  metric={metric}
+  isLive={currentUserData.isLive || false}
+  hasActiveTimer={currentUserData._hasActiveTimer || false}
+  currentTask={currentUserData.currentTask}
+/>
       )}
 
       {/* Profile Modal */}

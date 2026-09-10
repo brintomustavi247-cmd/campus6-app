@@ -42,7 +42,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="space-y-6 pb-12 animate-in fade-in">
       {/* Top Welcome Banner */}
-      <div className="p-6 rounded-3xl bg-surface border border-border shadow-sm text-text-primary shadow-xl relative overflow-hidden">
+      <div className="p-6 rounded-3xl bg-surface border border-border shadow-xl text-text-primary relative overflow-hidden">
         <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-gold/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
@@ -64,14 +64,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => onNavigate('daily_plan')}
-              className="px-4 py-2.5 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] text-xs font-extrabold shadow-lg transition-all flex items-center gap-1.5 min-h-[44px]"
+              className="px-4 py-2.5 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] text-xs font-extrabold shadow-lg transition-all flex items-center gap-1.5 min-h-11"
             >
               <Calendar className="w-4 h-4" />
               আজকের প্ল্যান ওপেন করুন
             </button>
             <button
               onClick={onOpenShareModal}
-              className="p-2.5 rounded-xl bg-surface-muted hover:bg-surface-muted border border-border-strong text-text-primary text-xs font-bold transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2.5 rounded-xl bg-surface-muted hover:bg-surface-muted border border-border-strong text-text-primary text-xs font-bold transition-all min-h-11 min-w-11 flex items-center justify-center"
               title="Share Progress"
             >
               <Share2 className="w-4 h-4 text-gold" />
@@ -115,7 +115,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="p-5 rounded-2xl bg-surface border border-border shadow-lg flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold  text-text-secondary">
-              পড়ার ঘণ্টা ও টার্গেট
+              পড়ার ঘণ্টা ও টার্গেট
             </span>
             <Clock className="w-4 h-4 text-gold" />
           </div>
@@ -138,11 +138,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Routine & Exam Cards */}
+      {/* Routine & Exam Cards — 🎯 NEW: dateKey pass করা হচ্ছে */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           <DailyRoutineCard
             routine={routine}
+            dateKey={todayKey}
             onStartFocusTimer={(session) => {
               onStartTimerWithSession(session);
               onNavigate('focus_timer');
@@ -152,6 +153,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {routine.examTopic && (
             <ExamCard
               examTopic={routine.examTopic}
+              dateKey={todayKey}
               onOpenExamPrep={() => onNavigate('daily_plan')}
             />
           )}
@@ -167,7 +169,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="space-y-2">
             <button
               onClick={() => onNavigate('focus_timer')}
-              className="w-full p-3 rounded-xl bg-focus-soft hover:bg-focus border border-focus text-focus text-xs font-bold flex items-center justify-between transition-all min-h-[44px]"
+              className="w-full p-3 rounded-xl bg-focus-soft hover:bg-focus border border-focus text-focus text-xs font-bold flex items-center justify-between transition-all min-h-11"
             >
               <span className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-gold" />
@@ -178,7 +180,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             <button
               onClick={() => onNavigate('daily_plan')}
-              className="w-full p-3 rounded-xl bg-surface-muted hover:bg-surface-hover border border-border text-text-primary text-xs font-bold flex items-center justify-between transition-all min-h-[44px]"
+              className="w-full p-3 rounded-xl bg-surface-muted hover:bg-surface-hover border border-border text-text-primary text-xs font-bold flex items-center justify-between transition-all min-h-11"
             >
               <span className="flex items-center gap-2">
                 <PlusCircle className="w-4 h-4 text-gold" />
@@ -189,7 +191,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             <button
               onClick={() => onNavigate('weekly_progress')}
-              className="w-full p-3 rounded-xl bg-surface-muted hover:bg-surface-hover border border-border text-text-primary text-xs font-bold flex items-center justify-between transition-all min-h-[44px]"
+              className="w-full p-3 rounded-xl bg-surface-muted hover:bg-surface-hover border border-border text-text-primary text-xs font-bold flex items-center justify-between transition-all min-h-11"
             >
               <span className="flex items-center gap-2">
                 <BarChart2 className="w-4 h-4 text-gold" />
@@ -200,11 +202,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             <button
               onClick={() => onNavigate('subjects')}
-              className="w-full p-3 rounded-xl bg-surface-muted hover:bg-surface-hover border border-border text-text-primary text-xs font-bold flex items-center justify-between transition-all min-h-[44px]"
+              className="w-full p-3 rounded-xl bg-surface-muted hover:bg-surface-hover border border-border text-text-primary text-xs font-bold flex items-center justify-between transition-all min-h-11"
             >
               <span className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-gold" />
-                বিষয়ভিত্তিক সিলেবাস প্রোগ্রেস
+                বিষয়ভিত্তিক সিলেবাস প্রোগ্রেস
               </span>
               <ArrowRight className="w-4 h-4" />
             </button>

@@ -34,7 +34,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       >
         <button
           onClick={onCancel}
-          className="absolute top-4 right-4 p-2 rounded-xl text-gold hover:text-text-primary hover:bg-red-900/40 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="absolute top-4 right-4 p-2 rounded-xl text-gold hover:text-text-primary hover:bg-red-900/40 transition-colors min-h-11 min-w-11 flex items-center justify-center"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />
@@ -57,13 +57,13 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-border">
           <button
             onClick={onCancel}
-            className="px-4 py-2.5 rounded-xl border border-border text-text-muted hover:bg-red-900/40 text-xs font-semibold transition-colors min-h-[44px]"
+            className="px-4 py-2.5 rounded-xl border border-border text-text-muted hover:bg-red-900/40 text-xs font-semibold transition-colors min-h-11"
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
-            className={`px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg transition-colors min-h-[44px] ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg transition-colors min-h-11 ${
               isDanger 
                 ? 'bg-rose-600 hover:bg-rose-700 text-text-primary' 
                 : 'bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent text-slate-50'

@@ -14,6 +14,7 @@ import { UserProfile } from '../types';
 import { Bell, Wifi, WifiOff, Swords, RefreshCw } from 'lucide-react';
 import { LiveClock } from './LiveClock';
 import { ProfileAvatar } from './ProfileAvatar';
+import { PwaInstallHeaderButton } from './PwaInstall';
 
 /* ═══════════════════════════════════════════════════════════
    TYPES
@@ -122,9 +123,12 @@ export const Header: React.FC<HeaderProps> = memo(({
           <StatusBadge isOnline={isOnline} isPendingSync={isPendingSync} onSyncNow={onSyncNow} />
         </div>
 
-        {/* ═══ RIGHT: Clock + Bell + Profile ═══ */}
+        {/* ═══ RIGHT: Clock + Install + Bell + Profile ═══ */}
         <div className="flex items-center gap-2 ml-auto">
           <LiveClock />
+
+          {/* 📲 PWA Install button (notification bell-এর পাশে) */}
+          <PwaInstallHeaderButton />
 
           <button
             onClick={onOpenNotification}
@@ -145,7 +149,7 @@ export const Header: React.FC<HeaderProps> = memo(({
             title={`Profile: ${displayName}`}
           >
             <ProfileAvatar profile={profile} size={34} />
-            <span className="hidden sm:inline text-xs font-bold truncate max-w-[110px] group-hover:text-gold transition-colors" title={displayName}>
+            <span className="hidden sm:inline text-xs font-bold truncate max-w-27.5 group-hover:text-gold transition-colors" title={displayName}>
               {displayName}
             </span>
           </button>

@@ -10,7 +10,7 @@ export const SquadRaidBoss: React.FC = () => {
   return (
     <div className="p-5 rounded-2xl bg-[#1E2030] border border-blue-900/30 shadow-lg relative overflow-hidden group">
       {/* Dynamic background effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-900/10 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-r from-blue-900/10 to-transparent pointer-events-none" />
       
       <div className="flex items-center justify-between mb-4 relative z-10">
         <div className="flex items-center gap-3">
@@ -38,7 +38,7 @@ export const SquadRaidBoss: React.FC = () => {
       <div className="space-y-1.5 relative z-10">
         <div className="h-4 w-full bg-[#0F111A] rounded-full overflow-hidden border border-slate-800 shadow-inner">
           <div 
-            className="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-1000 ease-out rounded-full relative"
+            className="h-full bg-linear-to-r from-red-600 to-red-400 transition-all duration-1000 ease-out rounded-full relative"
             style={{ width: `${progressPercent}%` }}
           >
             <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/20 animate-pulse" />

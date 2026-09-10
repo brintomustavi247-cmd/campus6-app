@@ -304,8 +304,8 @@ export const DailyPlanView: React.FC<DailyPlanViewProps> = ({
           {/* Routine & Exam Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-4">
-              <DailyRoutineCard routine={routine} />
-              {routine.examTopic && <ExamCard examTopic={routine.examTopic} />}
+       <DailyRoutineCard routine={routine} dateKey={selectedDateKey} />
+{routine.examTopic && <ExamCard examTopic={routine.examTopic} dateKey={selectedDateKey} />}
             </div>
 
             {/* Daily Stats Summary Box */}

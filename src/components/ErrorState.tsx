@@ -22,7 +22,7 @@ export const ErrorState: React.FC<ErrorProps> = ({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-800 hover:bg-rose-700 text-rose-100 text-xs font-semibold shadow-md transition-colors min-h-[44px]"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-800 hover:bg-rose-700 text-rose-100 text-xs font-semibold shadow-md transition-colors min-h-11"
         >
           <RotateCcw className="w-4 h-4" />
           আবার চেষ্টা করুন

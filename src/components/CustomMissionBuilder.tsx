@@ -143,7 +143,7 @@ export const CustomMissionBuilder: React.FC<CustomMissionBuilderProps> = ({ onAd
         <button
           type="submit"
           disabled={mode === 'coop' && !selectedFriend}
-          className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-black uppercase tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 rounded-xl bg-linear-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-black uppercase tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           Deploy Mission

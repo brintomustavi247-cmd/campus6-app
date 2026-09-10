@@ -45,7 +45,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
   return (
     <div className="space-y-6  pb-16 animate-in fade-in">
       {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-surface border border-border shadow-sm border border-border-strong shadow-xl text-text-primary">
+      <div className="p-6 rounded-3xl bg-surface border border-border-strong shadow-xl text-text-primary">
         <div className="flex items-center gap-2 text-gold mb-1">
           <BookOpenCheck className="w-5 h-5" />
           <span className="text-xs font-bold  ">বিষয়ভিত্তিক সিলেবাস এনালিটিক্স</span>
@@ -76,7 +76,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
             <button
               key={sub}
               onClick={() => setSelectedSubject(sub)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all min-h-[38px] ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all min-h-9.5 ${
                 selectedSubject === sub
                   ? 'bg-gold text-[#0F111A] shadow-md'
                   : 'bg-surface-muted text-text-muted hover:bg-red-900 border border-border'
@@ -132,7 +132,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
 
           <button
             type="submit"
-            className="sm:col-span-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent text-slate-50 text-xs font-bold shadow-md transition-colors min-h-[40px] flex items-center justify-center gap-1"
+            className="sm:col-span-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-slate-50 border border-transparent text-xs font-bold shadow-md transition-colors min-h-10 flex items-center justify-center gap-1"
           >
             <Plus className="w-4 h-4" />
             সেভ করুন

@@ -53,7 +53,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       <div className="flex items-center gap-2">
         <button
           onClick={handlePrevDay}
-          className="p-2 rounded-xl bg-surface-muted hover:bg-red-900 border border-border text-text-secondary hover:text-text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 rounded-xl bg-surface-muted hover:bg-red-900 border border-border text-text-secondary hover:text-text-primary transition-colors min-h-11 min-w-11 flex items-center justify-center"
           aria-label="Previous Day"
           title="পূর্ববর্তী দিন"
         >
@@ -81,7 +81,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
 
         <button
           onClick={handleNextDay}
-          className="p-2 rounded-xl bg-surface-muted hover:bg-red-900 border border-border text-text-secondary hover:text-text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 rounded-xl bg-surface-muted hover:bg-red-900 border border-border text-text-secondary hover:text-text-primary transition-colors min-h-11 min-w-11 flex items-center justify-center"
           aria-label="Next Day"
           title="পরবর্তী দিন"
         >
@@ -93,7 +93,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
         {!isToday && (
           <button
             onClick={handleToday}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] font-bold text-xs shadow-md transition-all min-h-[44px]"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] font-bold text-xs shadow-md transition-all min-h-11"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             আজ (Today)

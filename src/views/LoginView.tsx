@@ -415,7 +415,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onDemoEntr
               <button
                 type="button"
                 onClick={() => onDemoEntry ? onDemoEntry() : onLoginSuccess()}
-                className="w-full py-3.5 bg-gradient-to-r from-[#0AA8D8]/15 to-[#35D6FF]/15 hover:from-[#0AA8D8]/25 hover:to-[#35D6FF]/25 border border-[#35D6FF]/30 hover:border-[#35D6FF]/60 text-[#35D6FF] font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(53,214,255,0.25)] rounded-xl flex items-center justify-center gap-2 group"
+                className="w-full py-3.5 bg-linear-to-r from-[#0AA8D8]/15 to-[#35D6FF]/15 hover:from-[#0AA8D8]/25 hover:to-[#35D6FF]/25 border border-[#35D6FF]/30 hover:border-[#35D6FF]/60 text-[#35D6FF] font-bold transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(53,214,255,0.25)] rounded-xl flex items-center justify-center gap-2 group"
                 style={{ fontFamily: lblFont, letterSpacing: '1px' }}
               >
                 <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />

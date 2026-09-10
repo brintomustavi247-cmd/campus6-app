@@ -541,7 +541,7 @@ How can I help you master your curriculum today? Let's build study guides, run c
                 }
               }}
               placeholder={activeFile ? "Instruct AI on attached file context..." : "Query academic syllabus database..."}
-              className="flex-grow bg-[#0E1017] text-text-primary text-xs border border-white/5 focus:border-[#6366F1] rounded-xl px-4 py-3 outline-none placeholder-white/20 resize-none min-h-[44px] max-h-[120px]"
+              className="flex-grow bg-[#0E1017] text-text-primary text-xs border border-white/5 focus:border-[#6366F1] rounded-xl px-4 py-3 outline-none placeholder-white/20 resize-none min-h-11 max-h-[120px]"
               rows={Math.min(3, (input.match(/\n/g) || []).length + 1)}
             />
 

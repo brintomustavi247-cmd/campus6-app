@@ -94,7 +94,7 @@ export const DevTestPanel: React.FC<DevTestPanelProps> = ({
           <div className="flex flex-wrap gap-2 pt-1">
             <button
               onClick={handleSeed}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent text-text-primary text-xs font-bold transition-all min-h-[44px]"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent text-text-primary text-xs font-bold transition-all min-h-11"
             >
               <Database className="w-4 h-4 text-gold" />
               Seed Demo Data
@@ -102,7 +102,7 @@ export const DevTestPanel: React.FC<DevTestPanelProps> = ({
 
             <button
               onClick={handleClear}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-800/60 text-rose-200 text-xs font-bold transition-all min-h-[44px]"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-800/60 text-rose-200 text-xs font-bold transition-all min-h-11"
             >
               <Trash2 className="w-4 h-4" />
               Clear Local Storage
@@ -129,7 +129,7 @@ export const DevTestPanel: React.FC<DevTestPanelProps> = ({
             />
             <button
               onClick={handleJump}
-              className="px-4 py-2 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] text-xs font-bold transition-all min-h-[44px]"
+              className="px-4 py-2 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] text-xs font-bold transition-all min-h-11"
             >
               Go to Date
             </button>
@@ -148,7 +148,7 @@ export const DevTestPanel: React.FC<DevTestPanelProps> = ({
 
           <button
             onClick={handleForceSync}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-900 hover:bg-red-800 text-text-primary text-xs font-bold transition-all min-h-[44px]"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-900 hover:bg-red-800 text-text-primary text-xs font-bold transition-all min-h-11"
           >
             <RefreshCw className="w-4 h-4 text-gold" />
             Force Sync Pending Items
@@ -167,7 +167,7 @@ export const DevTestPanel: React.FC<DevTestPanelProps> = ({
 
           <button
             onClick={handleTestNotification}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-text-primary text-xs font-bold transition-all min-h-[44px]"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-text-primary text-xs font-bold transition-all min-h-11"
           >
             <Bell className="w-4 h-4" />
             Test Browser Notification

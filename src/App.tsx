@@ -71,6 +71,8 @@ import { supabase } from './supabaseClient';
 import { createUserInSupabaseIfNotExists } from './services/db';
 import { AppShell } from './components/AppShell';
 import { DashboardView } from './views/DashboardView';
+import { PwaInstallModal } from './components/PwaInstall';
+import { useClassExamReminders } from './utils/useClassExamReminders';
 
 // ============================================================================
 // LAZY-LOADED VIEWS (Code Splitting for Performance)
@@ -636,6 +638,11 @@ export function App() {
   }, [addToast]);
 
   // ========================================================================
+  // 🔔 CLASS/EXAM REMINDER ENGINE (all pages-এ active থাকবে)
+  // ========================================================================
+  useClassExamReminders({ onAddToast: addToast });
+
+  // ========================================================================
   // AUTH CALLBACK ROUTE (must precede all gates)
   // ========================================================================
 
@@ -681,9 +688,10 @@ export function App() {
   // ========================================================================
 
   return (
-    <AppShell
-      profile={profile}
-      activePage={activePage}
+    <>
+      <AppShell
+        profile={profile}
+        activePage={activePage}
       onNavigate={setActivePage}
       isOnline={isOnline}
       isPendingSync={isPendingSync}
@@ -828,6 +836,10 @@ export function App() {
         />
       </Suspense>
     </AppShell>
+
+    {/* 📲 PWA Install Popup — themed (login page-এর মতো dark+red+gold) */}
+    <PwaInstallModal onAddToast={addToast} />
+    </>
   );
 }
 

@@ -49,7 +49,7 @@ export const ShareProgressModal: React.FC<ShareProgressModalProps> = ({
       <div className="relative w-full max-w-md bg-bg border border-border rounded-3xl p-6 shadow-2xl text-text-primary space-y-5">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-xl text-gold hover:text-text-primary hover:bg-red-900/40 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="absolute top-4 right-4 p-2 rounded-xl text-gold hover:text-text-primary hover:bg-red-900/40 min-h-11 min-w-11 flex items-center justify-center"
         >
           <X className="w-5 h-5" />
         </button>
@@ -60,7 +60,7 @@ export const ShareProgressModal: React.FC<ShareProgressModalProps> = ({
         </div>
 
         {/* Visual Share Card Mockup */}
-        <div className="p-5 rounded-2xl bg-surface border border-border shadow-sm border-gold shadow-xl text-text-primary space-y-4 text-center relative overflow-hidden">
+        <div className="p-5 rounded-2xl bg-surface border border-gold shadow-xl text-text-primary space-y-4 text-center relative overflow-hidden">
           <div className="flex items-center justify-between pb-3 border-b border-border-strong text-left">
             <div>
               <h4 className="text-sm font-black text-text-primary">{profile.nickname || 'Student'}</h4>
@@ -95,7 +95,7 @@ export const ShareProgressModal: React.FC<ShareProgressModalProps> = ({
         <div className="flex items-center justify-end gap-3 pt-2">
           <button
             onClick={handleCopyText}
-            className="w-full py-3 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] text-xs font-extrabold shadow-lg transition-all flex items-center justify-center gap-2 min-h-[44px]"
+            className="w-full py-3 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] text-xs font-extrabold shadow-lg transition-all flex items-center justify-center gap-2 min-h-11"
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copied ? 'কপি করা হয়েছে!' : 'কপি প্রোগ্রেস টেক্সট'}
