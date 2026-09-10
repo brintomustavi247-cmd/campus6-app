@@ -66,7 +66,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             className={`px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg transition-colors min-h-11 ${
               isDanger 
                 ? 'bg-rose-600 hover:bg-rose-700 text-text-primary' 
-                : 'bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent text-slate-50'
+                : 'bg-primary hover:bg-primary-hover text-slate-50 shadow-sm border border-transparent'
             }`}
           >
             {confirmLabel}

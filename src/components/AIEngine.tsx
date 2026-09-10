@@ -401,7 +401,7 @@ How can I help you master your curriculum today? Let's build study guides, run c
         {/* Console Header */}
         <div className="p-4 bg-[#181A2A] border-b border-white/5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] flex items-center justify-center shadow">
+            <div className="w-8 h-8 rounded-lg bg-linear-to-tr from-[#6366F1] to-[#8B5CF6] flex items-center justify-center shadow">
               <Brain className="w-4.5 h-4.5 text-text-primary" />
             </div>
             <div>
@@ -444,7 +444,7 @@ How can I help you master your curriculum today? Let's build study guides, run c
                   {msg.file && (
                     <div className="mb-2.5 p-2 rounded-lg bg-black/40 border border-white/5 flex items-center gap-2.5 text-[10px] font-bold text-text-muted">
                       <FileText className="w-4 h-4 text-gold shrink-0" />
-                      <span className="truncate max-w-[200px]">{msg.file.name}</span>
+                      <span className="truncate max-w-50">{msg.file.name}</span>
                       <span className="text-text-primary/30">({msg.file.size})</span>
                     </div>
                   )}
@@ -497,7 +497,7 @@ How can I help you master your curriculum today? Let's build study guides, run c
               <div className="px-3 py-2 rounded-xl bg-[#1A1C2E] border border-white/5 flex justify-between items-center text-xs w-max max-w-full">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-gold shrink-0" />
-                  <span className="text-text-primary font-bold truncate max-w-[200px]">{activeFile.name}</span>
+                  <span className="text-text-primary font-bold truncate max-w-50">{activeFile.name}</span>
                 </div>
                 <button
                   onClick={() => setActiveFile(null)}
@@ -541,7 +541,7 @@ How can I help you master your curriculum today? Let's build study guides, run c
                 }
               }}
               placeholder={activeFile ? "Instruct AI on attached file context..." : "Query academic syllabus database..."}
-              className="flex-grow bg-[#0E1017] text-text-primary text-xs border border-white/5 focus:border-[#6366F1] rounded-xl px-4 py-3 outline-none placeholder-white/20 resize-none min-h-11 max-h-[120px]"
+              className="grow bg-[#0E1017] text-text-primary text-xs border border-white/5 focus:border-[#6366F1] rounded-xl px-4 py-3 outline-none placeholder-white/20 resize-none min-h-11 max-h-30"
               rows={Math.min(3, (input.match(/\n/g) || []).length + 1)}
             />
 
@@ -584,7 +584,7 @@ How can I help you master your curriculum today? Let's build study guides, run c
         </div>
 
         {/* Dynamic Formulas & Rules Panel */}
-        <div className="p-5 border-b border-white/5 flex-1 space-y-4 overflow-y-auto min-h-[250px]">
+        <div className="p-5 border-b border-white/5 flex-1 space-y-4 overflow-y-auto min-h-62.5">
           <div className="flex items-center gap-2.5 pb-2 border-b border-white/5">
             <BookOpen className="w-5 h-5 text-[#22C55E]" />
             <div>
@@ -624,7 +624,7 @@ How can I help you master your curriculum today? Let's build study guides, run c
             {suggestions.materials.map((mat, idx) => (
               <div 
                 key={idx} 
-                className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-white/[0.02] transition"
+                className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-white/2 transition"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1] mt-1.5 shrink-0"></span>
                 <span className="text-xs text-text-primary/70 hover:text-text-primary transition-all cursor-pointer font-medium leading-relaxed">

@@ -72,6 +72,7 @@ import { createUserInSupabaseIfNotExists } from './services/db';
 import { AppShell } from './components/AppShell';
 import { DashboardView } from './views/DashboardView';
 import { PwaInstallModal } from './components/PwaInstall';
+import { getUnreadCount, generateSmartNotifications, saveNotification, requestNotificationPermission, sendBrowserNotification } from './utils/smartNotifications';
 import { useClassExamReminders } from './utils/useClassExamReminders';
 
 // ============================================================================
@@ -448,6 +449,36 @@ export function App() {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // ⭐ Smart Notifications — unread count + auto-generate
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
+
+  // Drawer-এ read হলে badge live update হবে
+  useEffect(() => {
+    const sync = () => setUnreadNotifs(getUnreadCount());
+    window.addEventListener('campus6:notifications-changed', sync);
+    return () => window.removeEventListener('campus6:notifications-changed', sync);
+  }, []);
+
+  useEffect(() => {
+    const checkNotifications = () => {
+      const notifs = generateSmartNotifications(todayKey);
+      notifs.forEach(n => {
+        saveNotification(n);
+        if (n.priority === 'urgent' || n.priority === 'high') {
+          sendBrowserNotification(`${n.emoji} ${n.title}`, n.message);
+          addToast(n.priority === 'urgent' ? 'warning' : 'info', n.message, n.title);
+        }
+      });
+      setUnreadNotifs(getUnreadCount());
+    };
+
+    // Permission এখন drawer-এর button থেকে চাওয়া হয় (user gesture = mobile-এ কাজ করে)
+    checkNotifications();
+
+    const interval = setInterval(checkNotifications, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [todayKey, addToast]);
+
   // ========================================================================
   // PERIODIC MIDNIGHT CHECK (Date Rollover)
   // ========================================================================
@@ -689,19 +720,20 @@ export function App() {
 
   return (
     <>
-      <AppShell
+           <AppShell
         profile={profile}
         activePage={activePage}
-      onNavigate={setActivePage}
-      isOnline={isOnline}
-      isPendingSync={isPendingSync}
-      toasts={toasts}
-      onDismissToast={dismissToast}
-      onOpenProfile={() => setActivePage('settings')}
-      onSyncNow={async () => {
-        const synced = await flushPendingSyncs();
-        addToast('info', `${synced} টি বিষয় সিঙ্ক হয়েছে!`);
-      }}
+        onNavigate={setActivePage}
+        isOnline={isOnline}
+        isPendingSync={isPendingSync}
+        toasts={toasts}
+        onDismissToast={dismissToast}
+        onOpenProfile={() => setActivePage('settings')}
+        onSyncNow={async () => {
+          const synced = await flushPendingSyncs();
+          addToast('info', `${synced} টি বিষয় সিঙ্ক হয়েছে!`);
+        }}
+        unreadNotifications={unreadNotifs} // ⭐ Pass unread count
     >
       <Suspense fallback={<ViewLoadingFallback />}>
         {activePage === 'dashboard' && (

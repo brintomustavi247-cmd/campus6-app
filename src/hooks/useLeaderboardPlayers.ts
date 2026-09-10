@@ -5,43 +5,75 @@ import {
 } from '../services/leaderboardSync';
 import { useGlobalTimer } from '../contexts/TimerContext';
 import { EsportsPlayer } from '../components/squad/EsportsData';
+import { applyDemoOverlay } from '../utils/demoActivitySimulator';
+import { PeriodType, periodKeyFor } from '../utils/periodKeys';
+import { supabase } from '../supabaseClient';
 
 interface Params {
   currentUserId?: string | null;
   limit?: number;
+  /** ⭐ NEW: 'daily' | 'weekly' | 'monthly' | 'all' (default 'all') */
+  period?: PeriodType;
 }
 
 /**
  * THE one hook every leaderboard screen uses.
- *
- * • Ranks come from the single deterministic pipeline (leaderboardSync v8)
- *   → identical on every device, guaranteed.
- * • Own-tile live count-up works via the controller's setLocalTimerState —
- *   pushed fresh every tick WITHOUT resubscribing anything.
- * • A 30-second polling heartbeat keeps the board fresh when Realtime is unavailable.
+ * v2: period support (daily/weekly/monthly) + demo activity overlay।
  */
 export function useLeaderboardPlayers({
   currentUserId,
   limit,
+  period = 'all',
 }: Params = {}) {
   const { isRunning, secondsElapsed, topicName } = useGlobalTimer();
 
-  // Latest timer state in a ref → feed through getLocalTimerState.
   const timerRef = useRef<LocalTimerState>({ isRunning, secondsElapsed, topicName });
 
-  const [players, setPlayers] = useState<EsportsPlayer[]>([]);
+  const [basePlayers, setBasePlayers] = useState<EsportsPlayer[]>([]);
+  const [periodStats, setPeriodStats] = useState<Record<string, { minutes: number; xp: number }>>({});
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     timerRef.current = { isRunning, secondsElapsed, topicName };
-    // cheap push; service no-ops until ready & emits deterministically
   }, [isRunning, secondsElapsed, topicName]);
+
+  // ⭐ Period stats fetch + refresh
+  useEffect(() => {
+    let alive = true;
+    const key = periodKeyFor(period);
+
+    const fetchPeriod = async () => {
+      if (period === 'all' || !key) {
+        if (alive) setPeriodStats({});
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from('user_period_stats')
+          .select('user_id, minutes, xp')
+          .eq('period_type', period)
+          .eq('period_key', key);
+        if (!alive) return;
+        const map: Record<string, { minutes: number; xp: number }> = {};
+        (data || []).forEach((r: any) => {
+          map[r.user_id] = { minutes: Number(r.minutes || 0), xp: Number(r.xp || 0) };
+        });
+        setPeriodStats(map);
+      } catch (err) {
+        console.warn('[Leaderboard] period fetch failed:', err);
+      }
+    };
+
+    fetchPeriod();
+    const poll = setInterval(fetchPeriod, 30_000);
+    return () => { alive = false; clearInterval(poll); };
+  }, [period]);
 
   useEffect(() => {
     const handle = initializeLeaderboardRealtime({
       currentUserId: currentUserId ?? null,
       onPlayersUpdate: (p) => {
-        setPlayers(p);
+        setBasePlayers(p);
         setReady(true);
       },
       showOwnLiveTime: true,
@@ -62,7 +94,30 @@ export function useLeaderboardPlayers({
     };
   }, [currentUserId, limit]);
 
-  // memoize so lists don't re-render chains unnecessarily
+  // ⭐ Merge: period override → demo overlay
+  const players = useMemo(() => {
+    let list = basePlayers;
+
+    if (period !== 'all') {
+      list = list.map((p) => {
+        const st = periodStats[p.id];
+        const minutes = st ? Math.floor(st.minutes) : 0;
+        const xp = st ? st.xp : 0;
+        return {
+          ...p,
+          studyTime: minutes,
+          xp,
+          level: Math.floor(xp / 1000) + 1,
+          nextLevelXp: (Math.floor(xp / 1000) + 2) * 1000,
+          // period view-তে live overlay পরে বসবে
+        } as EsportsPlayer;
+      });
+    }
+
+    // Demo/public players simulation (current user বাদে)
+    return applyDemoOverlay(list);
+  }, [basePlayers, periodStats, period]);
+
   const value = useMemo(() => ({ players, ready }), [players, ready]);
   return value;
 }

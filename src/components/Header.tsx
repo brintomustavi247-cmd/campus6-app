@@ -27,6 +27,7 @@ interface HeaderProps {
   onOpenProfile: () => void;
   onSyncNow?: () => void;
   onOpenNotification: () => void;
+  unreadNotifications?: number; // ⭐ NEW
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -88,6 +89,7 @@ export const Header: React.FC<HeaderProps> = memo(({
   onOpenProfile,
   onSyncNow,
   onOpenNotification,
+  unreadNotifications = 0, // ⭐ NEW (default 0)
 }) => {
   const displayName: string = profile.displayName || profile.nickname || 'Student';
   const isDemoMode: boolean = !!profile.isDemo || !profile.uid;
@@ -138,7 +140,17 @@ export const Header: React.FC<HeaderProps> = memo(({
             title="Notifications"
           >
             <Bell className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" />
-            <span className="absolute top-2 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" aria-hidden="true" />
+
+            {/* ⭐ Red dot — শুধু unread থাকলে দেখাবে */}
+            {unreadNotifications > 0 && (
+              <span
+                className="absolute top-2 right-2.5 min-w-4.5 h-4.5 px-1 bg-red-500 rounded-full animate-pulse flex items-center justify-center text-[10px] font-bold text-white"
+                style={{ boxShadow: '0 0 8px rgba(239,68,68,0.6)' }}
+                aria-hidden="true"
+              >
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </span>
+            )}
           </button>
 
           {/* 🎯 PROFILE BUTTON — এখন ProfileAvatar ব্যবহার করছে */}

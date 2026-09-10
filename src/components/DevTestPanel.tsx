@@ -94,7 +94,7 @@ export const DevTestPanel: React.FC<DevTestPanelProps> = ({
           <div className="flex flex-wrap gap-2 pt-1">
             <button
               onClick={handleSeed}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent text-text-primary text-xs font-bold transition-all min-h-11"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-text-primary shadow-sm border border-transparent text-xs font-bold transition-all min-h-11"
             >
               <Database className="w-4 h-4 text-gold" />
               Seed Demo Data

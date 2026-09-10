@@ -58,6 +58,7 @@ import { getPresenceChannel } from '../supabaseChannels';
 import {
   initializeLeaderboardRealtime,
 } from './leaderboardSync';
+import { dailyKey, weeklyKey, monthlyKey } from '../utils/periodKeys';
 import { EsportsPlayer } from '../components/squad/EsportsData';
 
 // ============================================================================
@@ -446,6 +447,62 @@ export const fetchOrInitializeUser = async (user: any) => {
  * ========================================================================== */
 
 /**
+ * ⭐ Period stats writer (daily/weekly/monthly) — fire-and-forget।
+ * RPC থাকলে atomic, নাহলে client upsert fallback। Failure non-fatal।
+ */
+export const commitPeriodStats = async (userId: string, minutes: number): Promise<boolean> => {
+  if (!userId || minutes <= 0) return false;
+  const xp = Math.round(minutes * XP_PER_MINUTE);
+  const dKey = dailyKey();
+  const wKey = weeklyKey();
+  const mKey = monthlyKey();
+
+  try {
+    const { error } = await supabase.rpc('increment_period_stats', {
+      user_id_input: userId,
+      minutes_input: minutes,
+      xp_input: xp,
+      daily_key: dKey,
+      weekly_key: wKey,
+      monthly_key: mKey,
+    });
+    if (!error) return true;
+
+    // Fallback: client-side upsert loop
+    const rows: Array<{ type: string; key: string }> = [
+      { type: 'daily', key: dKey },
+      { type: 'weekly', key: wKey },
+      { type: 'monthly', key: mKey },
+    ];
+    for (const r of rows) {
+      const { data } = await supabase
+        .from('user_period_stats')
+        .select('minutes, xp')
+        .eq('user_id', userId)
+        .eq('period_type', r.type)
+        .eq('period_key', r.key)
+        .maybeSingle();
+      const cur = data || { minutes: 0, xp: 0 };
+      await supabase.from('user_period_stats').upsert(
+        {
+          user_id: userId,
+          period_type: r.type,
+          period_key: r.key,
+          minutes: Number(cur.minutes || 0) + minutes,
+          xp: Number(cur.xp || 0) + xp,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,period_type,period_key' }
+      );
+    }
+    return true;
+  } catch (err) {
+    console.warn('⚠️ [Period] commit failed (non-fatal):', err);
+    return false;
+  }
+};
+
+/**
  * Core atomic stat writer shared by session pushes AND live flushes.
  *
  * Path A: RPC `increment_study_time` (atomic, creates row if missing).
@@ -464,7 +521,10 @@ const commitMinutesAtomically = async (
     minutes_input: minutes,
   });
 
-  if (!rpcError) return true;
+  if (!rpcError) {
+    void commitPeriodStats(userId, minutes); // ⭐ period stats
+    return true;
+  }
 
   console.warn('⚠️ [Supabase] RPC unavailable, using fallback:', rpcError.message);
 
@@ -499,6 +559,7 @@ const commitMinutesAtomically = async (
       return false; // caller re-buffers → auto-retry
     }
 
+    void commitPeriodStats(userId, minutes); // ⭐ period stats
     return true;
   } catch (err) {
     console.error('❌ [Fallback] Exception:', err);

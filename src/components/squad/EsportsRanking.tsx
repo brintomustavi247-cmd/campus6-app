@@ -1,9 +1,10 @@
 /**
  * ============================================================================
- * CAMPUS 6.0 — ESPORTS RANKING / LEADERBOARD COMPONENT v10.0 FINAL
+ * CAMPUS 6.0 — ESPORTS RANKING / LEADERBOARD COMPONENT v11.0 FINAL
  * ============================================================================
- *
  * ✅ ALL FIXES INTEGRATED:
+ *
+ * v10 FIXES (preserved):
  * - TimerContext live injection (real-time rank updates while studying)
  * - Supabase PostgresChanges subscription (auto-refresh on DB changes)
  * - Presence channel integration (online/offline/focus status)
@@ -11,29 +12,35 @@
  * - Cross-device consistency (centralized data source)
  * - Mobile-optimized (visibility recovery)
  *
- * @version 10.0.0-FINAL (Production Ready)
+ * v11 NEW FIXES:
+ * - ⭐ METRIC FIX: XP tab → XP দেখায় (12,345 XP), Study tab → hours (174h 35m)
+ *   আগে দুটো tab-এই hours দেখাত → এখন metric-aware display
+ * - ⭐ PERIOD TABS: আজ / সাপ্তাহিক / মাসিক / সর্বকাল
+ *   → user_period_stats থেকে fetch, daily রাত ১২টায় auto-reset
+ * - ⭐ LIVE FRESHNESS: stale 'focus' status (3+ min old) → ignore
+ *   → tab বন্ধ করলেও live badge stick হয়ে থাকত, এখন 3-min window
+ * - ⭐ DEMO OVERLAY: public/bot players রা majhe-majhe পড়ে (study/break cycles)
+ *   → rank উপর-নিচ হয়, সবসময় static থাকে না
+ * - ⭐ SELF-BUMP: নিজের uncommitted minutes শুধু নিজের tile-এ add হয়
+ *   → rank order কখনো change হয় না, just display bump
+ *
+ * @version 11.0.0-FINAL (Production Ready)
  * ============================================================================
  */
 
-import React,
-{
-  useEffect,
-  useMemo,
-  useState,
-  useRef,
-} from 'react';
-
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { EsportsPlayer } from './EsportsData';
 import ProfilePremiumView from '../../views/ProfilePremiumView';
 import { UserProfile } from '../../types';
-
 import { usePresence } from '../../contexts/PresenceContext';
 import { useGlobalTimer } from '../../contexts/TimerContext';
 import { supabase } from '../../supabaseClient';
 import { subscribeToPresence } from '../../supabaseChannels';
+import { applyDemoOverlay } from '../../utils/demoActivitySimulator';
+import { PeriodType, periodKeyFor } from '../../utils/periodKeys';
 
 // ============================================================================
-// DESIGN TOKENS (Dark Theme) - DEFINED ONCE
+// DESIGN TOKENS (Dark Theme)
 // ============================================================================
 
 const COLORS = {
@@ -50,8 +57,11 @@ const COLORS = {
   cGreen: '#10B981',
 };
 
+/** ⭐ Live status কত মিনিট পর্যন্ত "fresh" ধরা হবে (stale focus ignore) */
+const LIVE_FRESH_MS = 3 * 60 * 1000;
+
 // ============================================================================
-// DATABASE USER TYPE - DEFINED ONCE
+// TYPES
 // ============================================================================
 
 interface DbUser {
@@ -80,314 +90,160 @@ interface DbUser {
   [key: string]: unknown;
 }
 
-// ============================================================================
-// RANKED PLAYER TYPE - DEFINED ONCE
-// ============================================================================
-
 interface RankedPlayer extends EsportsPlayer {
   displayRank: number;
 }
 
+type Metric = 'xp' | 'study';
+
 // ============================================================================
-// UTILITY: Generate Avatar URL - DEFINED ONCE
+// UTILITIES
 // ============================================================================
 
-const getAvatarUrl = (
-  name: string,
-  customAvatar?: string | null
-): string => {
-  if (
-    customAvatar &&
-    customAvatar.length > 5 &&
-    customAvatar.startsWith('http')
-  ) {
+const getAvatarUrl = (name: string, customAvatar?: string | null): string => {
+  if (customAvatar && customAvatar.length > 5 && customAvatar.startsWith('http')) {
     return customAvatar;
   }
-
-  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(
-    name || 'Player'
-  )}&backgroundColor=171924`;
+  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name || 'Player')}&backgroundColor=171924`;
 };
 
-// ============================================================================
-// UTILITY: Format Study Time - DEFINED ONCE
-// ============================================================================
-
-const formatStudyTime = (
-  minutes: number
-): string => {
-  if (!minutes || minutes <= 0) {
-    return '0m';
-  }
-
-  const safeMinutes = Math.max(0, Math.floor(minutes));
-  const hrs = Math.floor(safeMinutes / 60);
-  const mins = safeMinutes % 60;
-
-  if (hrs > 0) {
-    return `${hrs}h ${mins.toString().padStart(2, '0')}m`;
-  }
-
+const formatStudyTime = (minutes: number): string => {
+  if (!minutes || minutes <= 0) return '0m';
+  const safe = Math.max(0, Math.floor(minutes));
+  const hrs = Math.floor(safe / 60);
+  const mins = safe % 60;
+  if (hrs > 0) return `${hrs}h ${mins.toString().padStart(2, '0')}m`;
   return `${mins}m`;
 };
 
+/** ⭐ METRIC FIX: XP format */
+const formatXp = (xp: number): string =>
+  `${Math.max(0, Math.floor(xp)).toLocaleString('en-US')} XP`;
+
+/** ⭐ METRIC FIX: metric-aware score display */
+const formatScore = (metric: Metric, player: { xp?: number; studyTime?: number }): string =>
+  metric === 'xp'
+    ? formatXp(Number(player.xp || 0))
+    : formatStudyTime(Number(player.studyTime || 0));
+
 // ============================================================================
-// SUB-COMPONENT: Activity Tag - DEFINED ONCE
+// SUB-COMPONENTS
 // ============================================================================
 
-const ActivityTag: React.FC<{
-  status?: string | null;
-}> = ({ status }) => {
-  const getActivityConfig = () => {
-    if (!status || status === 'offline') {
-      return null;
-    }
-
+const ActivityTag: React.FC<{ status?: string | null }> = ({ status }) => {
+  const getConfig = () => {
+    if (!status || status === 'offline') return null;
     const s = status.toLowerCase();
-
-    if (s.includes('focus') || s.includes('study')) {
-      return {
-        label: 'Studying',
-        bg: 'rgba(16, 185, 129, 0.15)',
-        color: COLORS.cGreen,
-      };
-    }
-
-    if (s.includes('break')) {
-      return {
-        label: 'On Break',
-        bg: 'rgba(249, 115, 22, 0.15)',
-        color: '#F97316',
-      };
-    }
-
-    if (s.includes('sleep')) {
-      return {
-        label: 'Sleeping',
-        bg: 'rgba(99, 102, 241, 0.15)',
-        color: '#818cf8',
-      };
-    }
-
-    if (s.includes('class') || s.includes('lecture')) {
-      return {
-        label: 'In Class',
-        bg: 'rgba(0, 229, 255, 0.15)',
-        color: COLORS.c1st,
-      };
-    }
-
-    return {
-      label: status,
-      bg: 'rgba(139, 92, 246, 0.15)',
-      color: COLORS.cViolet,
-    };
+    if (s.includes('focus') || s.includes('study'))
+      return { label: 'Studying', bg: 'rgba(16, 185, 129, 0.15)', color: COLORS.cGreen };
+    if (s.includes('break'))
+      return { label: 'On Break', bg: 'rgba(249, 115, 22, 0.15)', color: '#F97316' };
+    if (s.includes('sleep'))
+      return { label: 'Sleeping', bg: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' };
+    if (s.includes('class') || s.includes('lecture'))
+      return { label: 'In Class', bg: 'rgba(0, 229, 255, 0.15)', color: COLORS.c1st };
+    return { label: status, bg: 'rgba(139, 92, 246, 0.15)', color: COLORS.cViolet };
   };
-
-  const config = getActivityConfig();
-
-  if (!config) {
-    return null;
-  }
-
+  const config = getConfig();
+  if (!config) return null;
   return (
     <span
       className="inline-block font-sans text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide"
-      style={{
-        backgroundColor: config.bg,
-        color: config.color,
-      }}
+      style={{ backgroundColor: config.bg, color: config.color }}
     >
       {config.label}
     </span>
   );
 };
 
-// ============================================================================
-// SUB-COMPONENT: Online Status Dot - DEFINED ONCE
-// ============================================================================
-
-const OnlineDot: React.FC<{
-  isOnline?: boolean;
-  isLive?: boolean;
-  size?: 'sm' | 'md';
-}> = ({
+const OnlineDot: React.FC<{ isOnline?: boolean; isLive?: boolean; size?: 'sm' | 'md' }> = ({
   isOnline = false,
   isLive = false,
   size = 'sm',
 }) => {
-  if (!isOnline && !isLive) {
-    return null;
-  }
-
-  const sz =
-    size === 'md'
-      ? 'w-[14px] h-[14px] border-[3px]'
-      : 'w-3 h-3 border-2';
-
+  if (!isOnline && !isLive) return null;
+  const sz = size === 'md' ? 'w-[14px] h-[14px] border-[3px]' : 'w-3 h-3 border-2';
   return (
     <div
       className={`absolute bottom-0.5 right-0.5 rounded-full ${sz}`}
       style={{
-        backgroundColor: isLive ? COLORS.cGreen : COLORS.cGreen,
+        backgroundColor: COLORS.cGreen,
         borderColor: COLORS.bgMain,
-        boxShadow: isLive ? `0 0 8px rgba(16, 185, 129, 0.6)` : undefined,
+        boxShadow: isLive ? '0 0 8px rgba(16, 185, 129, 0.6)' : undefined,
         animation: isLive ? 'pulse 2s infinite' : undefined,
       }}
     />
   );
 };
 
-// ============================================================================
-// SUB-COMPONENT: Podium Card (Top 3 Players) - DEFINED ONCE
-// ============================================================================
-
 interface PodiumCardProps {
   player: RankedPlayer;
   rank: number;
-  metric: 'xp' | 'study';
+  metric: Metric;
 }
 
-const PodiumCard: React.FC<PodiumCardProps> = ({
-  player,
-  rank,
-  metric,
-}) => {
+const PodiumCard: React.FC<PodiumCardProps> = ({ player, rank, metric }) => {
   const getRankConfig = () => {
     switch (rank) {
       case 1:
-        return {
-          tagColor: COLORS.c1st,
-          ringSize: 90,
-          ringGradient: `conic-gradient(${COLORS.c1st} 80%, transparent 80%)`,
-          scoreSize: 'text-base',
-          scoreColor: COLORS.c1st,
-          nameSize: '15px',
-          offset: '0px',
-        };
+        return { tagColor: COLORS.c1st, ringSize: 90, ringGradient: `conic-gradient(${COLORS.c1st} 80%, transparent 80%)`, scoreSize: 'text-base', scoreColor: COLORS.c1st, nameSize: '15px', offset: '0px' };
       case 2:
-        return {
-          tagColor: COLORS.textMain,
-          ringSize: 70,
-          ringGradient: `conic-gradient(${COLORS.c2nd} 60%, transparent 60%)`,
-          scoreSize: 'text-sm',
-          scoreColor: COLORS.c2nd,
-          nameSize: '13px',
-          offset: '15px',
-        };
+        return { tagColor: COLORS.textMain, ringSize: 70, ringGradient: `conic-gradient(${COLORS.c2nd} 60%, transparent 60%)`, scoreSize: 'text-sm', scoreColor: COLORS.c2nd, nameSize: '13px', offset: '15px' };
       case 3:
-        return {
-          tagColor: COLORS.c3rd,
-          ringSize: 70,
-          ringGradient: `conic-gradient(${COLORS.c3rd} 40%, transparent 40%)`,
-          scoreSize: 'text-sm',
-          scoreColor: COLORS.c3rd,
-          nameSize: '13px',
-          offset: '15px',
-        };
+        return { tagColor: COLORS.c3rd, ringSize: 70, ringGradient: `conic-gradient(${COLORS.c3rd} 40%, transparent 40%)`, scoreSize: 'text-sm', scoreColor: COLORS.c3rd, nameSize: '13px', offset: '15px' };
       default:
-        return {
-          tagColor: COLORS.textMuted,
-          ringSize: 70,
-          ringGradient: `conic-gradient(${COLORS.textMuted} 30%, transparent 30%)`,
-          scoreSize: 'text-sm',
-          scoreColor: COLORS.textMuted,
-          nameSize: '13px',
-          offset: '15px',
-        };
+        return { tagColor: COLORS.textMuted, ringSize: 70, ringGradient: `conic-gradient(${COLORS.textMuted} 30%, transparent 30%)`, scoreSize: 'text-sm', scoreColor: COLORS.textMuted, nameSize: '13px', offset: '15px' };
     }
   };
-
   const config = getRankConfig();
-  const formattedScore = metric === 'xp'
-    ? `${player.xp.toLocaleString()} XP`
-    : formatStudyTime(Number(player.studyTime || 0));
+  const score = formatScore(metric, player);
   const avatarSrc = getAvatarUrl(player.name, player.avatar);
 
   return (
-    <div
-      className="flex flex-col items-center relative shrink-0"
-      style={{ marginBottom: config.offset }}
-    >
-      {/* Rank Tag */}
+    <div className="flex flex-col items-center relative shrink-0" style={{ marginBottom: config.offset }}>
       <div
         className="flex items-center gap-1 mb-2 text-[10px] font-extrabold uppercase"
-        style={{
-          fontFamily: "'Lexend', sans-serif",
-          color: config.tagColor,
-          fontWeight: 800,
-        }}
+        style={{ fontFamily: "'Lexend', sans-serif", color: config.tagColor, fontWeight: 800 }}
       >
         {rank === 1 && (
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+            <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6 7zm3 16h14" />
           </svg>
         )}
         {rank === 1 ? '1ST' : rank === 2 ? '2ND' : '3RD'}
       </div>
 
-      {/* Avatar Ring */}
       <div
         className="rounded-full p-1 flex items-center justify-center relative shrink-0"
-        style={{
-          width: `${config.ringSize}px`,
-          height: `${config.ringSize}px`,
-          background: config.ringGradient,
-        }}
+        style={{ width: `${config.ringSize}px`, height: `${config.ringSize}px`, background: config.ringGradient }}
       >
         <div
           className="w-full h-full rounded-full overflow-hidden relative border-[3px]"
-          style={{
-            backgroundColor: COLORS.bgCard,
-            borderColor: COLORS.bgMain,
-          }}
+          style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.bgMain }}
         >
-          <img
-            src={avatarSrc}
-            alt={player.name}
-            className="w-full h-full object-cover"
-          />
+          <img src={avatarSrc} alt={player.name} className="w-full h-full object-cover" />
           <OnlineDot isOnline={player.isOnline} isLive={player.isLive} size="md" />
         </div>
       </div>
 
-      {/* Player Info */}
       <div className="text-center mt-3 flex flex-col items-center gap-1">
         <div
           className="font-semibold text-white leading-tight"
-          style={{
-            fontSize: config.nameSize,
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontWeight: 700,
-          }}
+          style={{ fontSize: config.nameSize, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}
         >
           {player.username || player.name}
         </div>
-
-        <ActivityTag
-          status={player.isLive ? player.currentTask : undefined}
-        />
-
+        <ActivityTag status={player.isLive ? player.currentTask : undefined} />
         <div
           className={`font-extrabold mt-0.5 ${config.scoreSize}`}
-          style={{
-            color: config.scoreColor,
-            fontFamily: "'JetBrains Mono', monospace",
-            fontWeight: 800,
-          }}
+          style={{ color: config.scoreColor, fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}
         >
-          {formattedScore}
+          {score}
         </div>
-        
-        {/* Live Timer Indicator */}
         {player._hasActiveTimer && (
           <div
             className="mt-1 px-2 py-0.5 rounded-full text-[8px] font-bold animate-pulse"
-            style={{
-              background: 'rgba(139, 92, 246, 0.2)',
-              color: COLORS.cViolet,
-              border: '1px solid rgba(139, 92, 246, 0.4)',
-            }}
+            style={{ background: 'rgba(139, 92, 246, 0.2)', color: COLORS.cViolet, border: '1px solid rgba(139, 92, 246, 0.4)' }}
           >
             ⏱️ LIVE SESSION
           </div>
@@ -397,60 +253,32 @@ const PodiumCard: React.FC<PodiumCardProps> = ({
   );
 };
 
-// ============================================================================
-// SUB-COMPONENT: List Item (Rank 4+) - DEFINED ONCE
-// ============================================================================
-
 interface ListItemProps {
   player: RankedPlayer;
   rank: number;
+  metric: Metric;
   isCurrentUser?: boolean;
-  metric: 'xp' | 'study'; // NEW
   onClick?: () => void;
 }
 
-const ListItem: React.FC<ListItemProps> = ({
-  player,
-  rank,
-  isCurrentUser = false,
-  metric,
-  onClick,
-}) => {
+const ListItem: React.FC<ListItemProps> = ({ player, rank, metric, isCurrentUser = false, onClick }) => {
   const getTrendIcon = () => {
-    if (player.trend === 'up') {
+    if (player.trend === 'up')
       return (
-        <svg
-          className="w-2.5 h-2.5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={COLORS.cGreen}
-          strokeWidth="3"
-        >
+        <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke={COLORS.cGreen} strokeWidth="3">
           <polyline points="18 15 12 9 6 15" />
         </svg>
       );
-    }
-
-    if (player.trend === 'down') {
+    if (player.trend === 'down')
       return (
-        <svg
-          className="w-2.5 h-2.5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={COLORS.c3rd}
-          strokeWidth="3"
-        >
+        <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke={COLORS.c3rd} strokeWidth="3">
           <polyline points="6 9 12 15 18 9" />
         </svg>
       );
-    }
-
     return null;
   };
 
-  const formattedScore = metric === 'xp'
-    ? `${player.xp.toLocaleString()} XP`
-    : formatStudyTime(Number(player.studyTime || 0));
+  const score = formatScore(metric, player);
   const avatarSrc = getAvatarUrl(player.name, player.avatar);
 
   return (
@@ -464,85 +292,47 @@ const ListItem: React.FC<ListItemProps> = ({
         borderColor: isCurrentUser ? 'rgba(139, 92, 246, 0.3)' : undefined,
       }}
     >
-      {/* Left Side */}
       <div className="flex items-center gap-3.5 min-w-0">
-        {/* Rank + Trend */}
         <div className="flex flex-col items-center w-5 shrink-0">
           {getTrendIcon()}
           <span
             className="font-bold text-sm leading-none mt-1"
-            style={{
-              fontFamily: "'Lexend', sans-serif",
-              fontWeight: 800,
-              color: isCurrentUser ? COLORS.cViolet : '#fff',
-            }}
+            style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, color: isCurrentUser ? COLORS.cViolet : '#fff' }}
           >
             {rank}
           </span>
         </div>
 
-        {/* Avatar */}
         <div
           className="rounded-full p-0.5 relative shrink-0"
-          style={{
-            width: '44px',
-            height: '44px',
-            background: `conic-gradient(${COLORS.cViolet} 30%, ${COLORS.border} 30%)`,
-          }}
+          style={{ width: '44px', height: '44px', background: `conic-gradient(${COLORS.cViolet} 30%, ${COLORS.border} 30%)` }}
         >
           <div
             className="w-full h-full rounded-full overflow-hidden flex items-center justify-center border-2"
-            style={{
-              backgroundColor: COLORS.bgCard,
-              borderColor: COLORS.bgMain,
-            }}
+            style={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.bgMain }}
           >
-            <img
-              src={avatarSrc}
-              alt={player.name}
-              className="w-full h-full object-cover"
-            />
+            <img src={avatarSrc} alt={player.name} className="w-full h-full object-cover" />
             <OnlineDot isOnline={player.isOnline} isLive={player.isLive} />
           </div>
         </div>
 
-        {/* Info */}
         <div className="flex flex-col gap-1 min-w-0">
-          <h4
-            className="text-sm font-semibold text-white leading-none truncate"
-            style={{ fontWeight: 600 }}
-          >
+          <h4 className="text-sm font-semibold text-white leading-none truncate" style={{ fontWeight: 600 }}>
             {player.username || player.name}
             {player._hasActiveTimer && (
-              <span
-                className="ml-2 inline-block w-2 h-2 rounded-full animate-pulse"
-                style={{ backgroundColor: COLORS.cViolet }}
-              />
+              <span className="ml-2 inline-block w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: COLORS.cViolet }} />
             )}
           </h4>
-
           <div className="flex items-center gap-1.5 flex-wrap">
             <span
               className="text-[9px] uppercase font-medium truncate"
-              style={{
-                color: isCurrentUser ? COLORS.cViolet : COLORS.textMuted,
-              }}
+              style={{ color: isCurrentUser ? COLORS.cViolet : COLORS.textMuted }}
             >
               {player.tier}
             </span>
-
-            <ActivityTag
-              status={player.isLive ? player.currentTask : undefined}
-            />
-
+            <ActivityTag status={player.isLive ? player.currentTask : undefined} />
             {player._hasActiveTimer && (
-              <span
-                className="text-[8px] font-bold px-1.5 py-0.5 rounded"
-                style={{
-                  background: 'rgba(139, 92, 246, 0.15)',
-                  color: COLORS.cViolet,
-                }}
-              >
+              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(139, 92, 246, 0.15)', color: COLORS.cViolet }}>
                 LIVE
               </span>
             )}
@@ -550,44 +340,24 @@ const ListItem: React.FC<ListItemProps> = ({
         </div>
       </div>
 
-      {/* Score */}
-      <div
-        className="text-right shrink-0 ml-2"
-        style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontWeight: 800,
-        }}
-      >
-        <p
-          className="text-sm font-bold"
-          style={{
-            color: isCurrentUser ? COLORS.cViolet : '#fff',
-          }}
-        >
-          {formattedScore}
+      <div className="text-right shrink-0 ml-2" style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>
+        <p className="text-sm font-bold" style={{ color: isCurrentUser ? COLORS.cViolet : '#fff' }}>
+          {score}
         </p>
-        {isCurrentUser && player._rawDbStudyTime !== undefined && (
-          <p
-            className="text-[8px]"
-            style={{ color: COLORS.textMuted }}
-          >
-            DB: {formatStudyTime(player._rawDbStudyTime)}
-          </p>
-        )}
+        {/* ⭐ অন্য metric-এর ছোট preview */}
+        <p className="text-[8px]" style={{ color: COLORS.textMuted }}>
+          {metric === 'xp' ? formatStudyTime(Number(player.studyTime || 0)) : formatXp(Number(player.xp || 0))}
+        </p>
       </div>
     </div>
   );
 };
 
-// ============================================================================
-// SUB-COMPONENT: Floating User Rank Card - DEFINED ONCE
-// ============================================================================
-
 interface FloatingUserRankProps {
   player: RankedPlayer;
   rank: number;
+  metric: Metric;
   isLive: boolean;
-  metric: 'xp' | 'study'; // NEW
   hasActiveTimer?: boolean;
   currentTask?: string;
 }
@@ -595,16 +365,14 @@ interface FloatingUserRankProps {
 const FloatingUserRank: React.FC<FloatingUserRankProps> = ({
   player,
   rank,
-  isLive = false,
   metric,
+  isLive = false,
   hasActiveTimer = false,
   currentTask,
 }) => {
   const displayName = player.username || player.name || 'You';
   const avatarSrc = getAvatarUrl(displayName, player.avatar);
-  const formattedScore = metric === 'xp'
-    ? `${player.xp.toLocaleString()} XP`
-    : formatStudyTime(Number(player.studyTime || 0));
+  const score = formatScore(metric, player);
 
   return (
     <div
@@ -616,56 +384,26 @@ const FloatingUserRank: React.FC<FloatingUserRankProps> = ({
         zIndex: 9998,
       }}
     >
-      {/* Left Side */}
       <div className="flex items-center gap-3">
-        {/* Rank */}
         <div className="flex flex-col items-center justify-center w-8">
-          <span
-            className="text-[8px] font-extrabold uppercase text-center leading-tight mb-0.5"
-            style={{ color: COLORS.cViolet, fontWeight: 800 }}
-          >
+          <span className="text-[8px] font-extrabold uppercase text-center leading-tight mb-0.5" style={{ color: COLORS.cViolet, fontWeight: 800 }}>
             Your<br />Rank
           </span>
-          <span
-            className="text-base font-extrabold leading-none"
-            style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800 }}
-          >
+          <span className="text-base font-extrabold leading-none" style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800 }}>
             {rank || '-'}
           </span>
         </div>
 
-        {/* Avatar */}
-        <div
-          className="rounded-full p-0.5 relative shrink-0"
-          style={{
-            width: '44px',
-            height: '44px',
-            background: COLORS.cViolet,
-          }}
-        >
-          <div
-            className="w-full h-full rounded-full overflow-hidden border-2"
-            style={{ borderColor: COLORS.bgMain }}
-          >
-            <img
-              src={avatarSrc}
-              alt={displayName}
-              className="w-full h-full object-cover"
-            />
+        <div className="rounded-full p-0.5 relative shrink-0" style={{ width: '44px', height: '44px', background: COLORS.cViolet }}>
+          <div className="w-full h-full rounded-full overflow-hidden border-2" style={{ borderColor: COLORS.bgMain }}>
+            <img src={avatarSrc} alt={displayName} className="w-full h-full object-cover" />
             <OnlineDot isOnline={isLive} isLive={hasActiveTimer} />
           </div>
-          
           {hasActiveTimer && (
-            <div
-              className="absolute inset-0 rounded-full animate-ping opacity-75"
-              style={{
-                border: `2px solid ${COLORS.cViolet}`,
-              }}
-            />
+            <div className="absolute inset-0 rounded-full animate-ping opacity-75" style={{ border: `2px solid ${COLORS.cViolet}` }} />
           )}
         </div>
 
-        {/* Name & Status */}
         <div className="flex flex-col gap-0.5 min-w-0">
           <h4 className="text-sm font-semibold text-white truncate">
             {displayName}
@@ -679,31 +417,15 @@ const FloatingUserRank: React.FC<FloatingUserRankProps> = ({
         </div>
       </div>
 
-      {/* Score */}
-      <div
-        className="text-right shrink-0"
-        style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontWeight: 800,
-        }}
-      >
-        <p className="text-sm font-bold" style={{ color: COLORS.cViolet }}>
-          {formattedScore}
-        </p>
-        <p
-          className="text-[9px] uppercase font-medium mt-0.5"
-          style={{ color: COLORS.textMuted }}
-        >
-          Total Time
+      <div className="text-right shrink-0" style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>
+        <p className="text-sm font-bold" style={{ color: COLORS.cViolet }}>{score}</p>
+        <p className="text-[9px] uppercase font-medium mt-0.5" style={{ color: COLORS.textMuted }}>
+          {metric === 'xp' ? 'Total XP' : 'Total Time'}
         </p>
       </div>
     </div>
   );
 };
-
-// ============================================================================
-// HELPER: Map Player to UserProfile - DEFINED ONCE
-// ============================================================================
 
 const mapToUserProfile = (player: EsportsPlayer): UserProfile => ({
   uid: player.id,
@@ -726,55 +448,42 @@ const mapToUserProfile = (player: EsportsPlayer): UserProfile => ({
 });
 
 // ============================================================================
-// 🎯 MAIN COMPONENT: ESPORTS RANKING - DEFINED ONCE
+// 🎯 MAIN COMPONENT
 // ============================================================================
 
 export const EsportsRanking: React.FC = () => {
-  // -----------------------------------------------------------------------
-  // HOOKS: Presence & Timer Context
-  // -----------------------------------------------------------------------
-
   const { presence, uid } = usePresence();
-  
-  // Timer Context Integration (for live injection)
   const {
     isRunning: timerIsRunning,
     secondsElapsed: timerSecondsElapsed,
     topicName: timerTopicName,
   } = useGlobalTimer();
 
-  // -----------------------------------------------------------------------
-  // STATE
-  // -----------------------------------------------------------------------
-
   const [selectedUser, setSelectedUser] = useState<EsportsPlayer | null>(null);
-  const [metric, setMetric] = useState<'xp' | 'study'>('study');
-  
-  // Loading & error states
+  const [metric, setMetric] = useState<Metric>('study');
+  const [period, setPeriod] = useState<PeriodType>('all'); // ⭐ NEW
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Database state
   const [dbPlayers, setDbPlayers] = useState<DbUser[]>([]);
   const [presences, setPresences] = useState<Record<string, any>>({});
   const [currentUserProfile, setCurrentUserProfile] = useState<DbUser | null>(null);
+  const [periodStats, setPeriodStats] = useState<Record<string, { minutes: number; xp: number }>>({}); // ⭐ NEW
 
-  // Refs for cleanup
   const mountedRef = useRef(true);
   const usersChannelRef = useRef<any>(null);
   const presenceUnsubRef = useRef<(() => void) | null>(null);
 
   // -----------------------------------------------------------------------
-  // SUPABASE REALTIME SETUP
+  // SUPABASE REALTIME SETUP (users + presence)
   // -----------------------------------------------------------------------
-
   useEffect(() => {
     mountedRef.current = true;
     setIsLoading(true);
     setError(null);
 
-    // Fetch All Users
     const fetchUsers = async () => {
       try {
         const { data, error: fetchError } = await supabase
@@ -784,30 +493,25 @@ export const EsportsRanking: React.FC = () => {
           .limit(500);
 
         if (fetchError) {
-          console.error('[EsportsRanking-v10] Users fetch error:', fetchError);
+          console.error('[EsportsRanking-v11] Users fetch error:', fetchError);
           setError('Failed to load rankings');
           return;
         }
-
         if (mountedRef.current && data) {
           setDbPlayers(data as DbUser[]);
-          console.log(`[EsportsRanking-v10] Loaded ${data.length} users`);
-          setIsLoading(false); // ⭐ FIX E3: fetch success alone ends the spinner
+          setIsLoading(false);
         }
       } catch (err) {
-        console.error('[EsportsRanking-v10] Fetch exception:', err);
+        console.error('[EsportsRanking-v11] Fetch exception:', err);
         setError('Network error loading rankings');
       }
     };
 
-    // Fetch Current User Profile
     const fetchCurrentUser = async () => {
       if (!uid) return;
-
       try {
         const { data: { user } } = await supabase.auth.getUser();
         const metadata = user?.user_metadata || {};
-
         const fallbackUser: DbUser = {
           id: uid,
           email: user?.email || '',
@@ -820,194 +524,179 @@ export const EsportsRanking: React.FC = () => {
           current_status: 'offline',
           current_task: '',
         };
-
         const { data, error: profileError } = await supabase
           .from('users')
           .select('*')
           .eq('id', uid)
           .maybeSingle();
-
-        const profileData: DbUser = profileError || !data
-          ? fallbackUser
-          : {
-              ...(data as DbUser),
-              full_name: data.full_name || fallbackUser.full_name,
-              avatar_url: data.avatar_url || fallbackUser.avatar_url,
-            };
-
+        const profileData: DbUser =
+          profileError || !data
+            ? fallbackUser
+            : {
+                ...(data as DbUser),
+                full_name: data.full_name || fallbackUser.full_name,
+                avatar_url: data.avatar_url || fallbackUser.avatar_url,
+              };
         if (!mountedRef.current) return;
-
         setCurrentUserProfile(profileData);
-
-        // Ensure current user exists in local list
         setDbPlayers((current: DbUser[]) => {
-          const exists = current.some((entry) => entry.id === uid);
-          if (exists) {
-            return current.map((entry) =>
-              entry.id === uid ? { ...entry, ...profileData } : entry
-            );
-          }
+          const exists = current.some((e) => e.id === uid);
+          if (exists) return current.map((e) => (e.id === uid ? { ...e, ...profileData } : e));
           return [...current, profileData];
         });
       } catch (err) {
-        console.warn('[EsportsRanking-v10] Failed to fetch current user:', err);
+        console.warn('[EsportsRanking-v11] Failed to fetch current user:', err);
       }
     };
 
-    // Presence Realtime Subscription
     const setupPresenceSubscription = () => {
       presenceUnsubRef.current = subscribeToPresence((state: any) => {
         if (!mountedRef.current) return;
-
-        const newPresences: Record<string, any> = {};
-
+        const next: Record<string, any> = {};
         Object.keys(state || {}).forEach((key) => {
           const entries = state[key];
           if (Array.isArray(entries) && entries.length > 0) {
             const pres = entries[0];
-            if (pres?.userId) {
-              newPresences[pres.userId] = pres;
-            }
+            if (pres?.userId) next[pres.userId] = pres;
           }
         });
-
-        setPresences(newPresences);
+        setPresences(next);
         setLastUpdated(new Date());
       });
     };
 
-    // Users Table Realtime Subscription
     const setupUsersRealtime = async () => {
       if (usersChannelRef.current) {
         await supabase.removeChannel(usersChannelRef.current).catch(() => {});
       }
-
       usersChannelRef.current = supabase
-        .channel('leaderboard-users-realtime-v10')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'users',
-          },
-          (payload: any) => {
-            if (!mountedRef.current) return;
-
-            console.log('[EsportsRanking-v10] Users realtime:', payload.eventType);
-
-            switch (payload.eventType) {
-              case 'INSERT':
-                const newUser = payload.new as DbUser;
-                if (!newUser?.id) return;
-
-                setDbPlayers((current: DbUser[]) => {
-                  const exists = current.some((u) => u.id === newUser.id);
-                  if (exists) {
-                    return current.map((u) =>
-                      u.id === newUser.id ? { ...u, ...newUser } : u
-                    );
-                  }
-                  return [...current, newUser];
-                });
-
-                if (newUser.id === uid) {
-                  setCurrentUserProfile((prev) => ({ ...(prev || {}), ...newUser }));
-                }
-                break;
-
-              case 'UPDATE':
-                const updatedUser = payload.new as DbUser;
-                if (!updatedUser?.id) return;
-
-                setDbPlayers((current: DbUser[]) => {
-                  const index = current.findIndex((u) => u.id === updatedUser.id);
-                  if (index === -1) return [...current, updatedUser];
-
-                  const updated = [...current];
-                  updated[index] = { ...updated[index], ...updatedUser };
-                  return updated;
-                });
-
-                if (updatedUser.id === uid) {
-                  setCurrentUserProfile((prev) => ({ ...(prev || {}), ...updatedUser }));
-                }
-                break;
-
-              case 'DELETE':
-                const deletedUser = payload.old as DbUser;
-                if (!deletedUser?.id || deletedUser.id === uid) return;
-
-                setDbPlayers((current: DbUser[]) =>
-                  current.filter((u) => u.id !== deletedUser.id)
-                );
-                break;
+        .channel('leaderboard-users-realtime-v11')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload: any) => {
+          if (!mountedRef.current) return;
+          switch (payload.eventType) {
+            case 'INSERT': {
+              const newUser = payload.new as DbUser;
+              if (!newUser?.id) return;
+              setDbPlayers((cur) => {
+                const exists = cur.some((u) => u.id === newUser.id);
+                if (exists) return cur.map((u) => (u.id === newUser.id ? { ...u, ...newUser } : u));
+                return [...cur, newUser];
+              });
+              if (newUser.id === uid) setCurrentUserProfile((prev) => ({ ...(prev || {}), ...newUser }));
+              break;
             }
-
-            setLastUpdated(new Date());
+            case 'UPDATE': {
+              const updatedUser = payload.new as DbUser;
+              if (!updatedUser?.id) return;
+              setDbPlayers((cur) => {
+                const idx = cur.findIndex((u) => u.id === updatedUser.id);
+                if (idx === -1) return [...cur, updatedUser];
+                const next = [...cur];
+                next[idx] = { ...next[idx], ...updatedUser };
+                return next;
+              });
+              if (updatedUser.id === uid) setCurrentUserProfile((prev) => ({ ...(prev || {}), ...updatedUser }));
+              break;
+            }
+            case 'DELETE': {
+              const deleted = payload.old as DbUser;
+              if (!deleted?.id || deleted.id === uid) return;
+              setDbPlayers((cur) => cur.filter((u) => u.id !== deleted.id));
+              break;
+            }
           }
-        )
+          setLastUpdated(new Date());
+        })
         .subscribe((status) => {
-          console.log('[EsportsRanking-v10] Realtime channel status:', status);
-          
-          if (status === 'SUBSCRIBED') {
-            setIsLoading(false);
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            setError('Connection lost. Retrying...');
-          }
+          if (status === 'SUBSCRIBED') setIsLoading(false);
+          else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setError('Connection lost. Retrying...');
         });
     };
 
-    // Initialize
     fetchUsers()
       .then(() => fetchCurrentUser())
       .then(() => {
-        if (!mountedRef.current) return; // ⭐ FIX E4: unmount raced us — abort
+        if (!mountedRef.current) return;
         setupPresenceSubscription();
         setupUsersRealtime();
       });
 
-    // Cleanup
     return () => {
       mountedRef.current = false;
-      
       if (presenceUnsubRef.current) {
         presenceUnsubRef.current();
         presenceUnsubRef.current = null;
       }
-
       if (usersChannelRef.current) {
-        supabase.removeChannel(usersChannelRef.current).catch((err) => {
-          console.warn('[EsportsRanking-v10] Error removing channel:', err);
-        });
+        supabase.removeChannel(usersChannelRef.current).catch(() => {});
         usersChannelRef.current = null;
       }
-
-      console.log('[EsportsRanking-v10] Cleanup complete');
     };
   }, [uid]);
 
   // -----------------------------------------------------------------------
-  // BUILD LIVE PLAYER LIST (WITH TIMER INJECTION)
+  // ⭐ PERIOD STATS FETCH (daily/weekly/monthly) + 30s refresh
   // -----------------------------------------------------------------------
+  useEffect(() => {
+    let alive = true;
+    const key = periodKeyFor(period);
 
+    const load = async () => {
+      if (period === 'all' || !key) {
+        if (alive) setPeriodStats({});
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from('user_period_stats')
+          .select('user_id, minutes, xp')
+          .eq('period_type', period)
+          .eq('period_key', key);
+        if (!alive) return;
+        const map: Record<string, { minutes: number; xp: number }> = {};
+        (data || []).forEach((r: any) => {
+          map[r.user_id] = { minutes: Number(r.minutes || 0), xp: Number(r.xp || 0) };
+        });
+        setPeriodStats(map);
+        setLastUpdated(new Date());
+      } catch (err) {
+        console.warn('[EsportsRanking-v11] period stats fetch failed:', err);
+      }
+    };
+
+    load();
+    const poll = setInterval(load, 30_000);
+    return () => {
+      alive = false;
+      clearInterval(poll);
+    };
+  }, [period]);
+
+  // -----------------------------------------------------------------------
+  // BUILD LIVE PLAYER LIST (period override + freshness + timer injection)
+  // -----------------------------------------------------------------------
   const livePlayers = useMemo(() => {
     return dbPlayers.map((u: DbUser) => {
       const p = presences[u.id] || {};
       const isCurrentUser = u.id === uid;
-      
+
       const committedMinutes = Math.max(0, Math.floor(Number(u.total_study_time || 0)));
       const liveMinutes = Math.max(0, Math.floor(Number((u as any).live_study_minutes || 0)));
-      const isStudying = u.current_status === 'focus' || p.status === 'focus';
-      
-      // ⭐ FIX E1: NO device-local score additions anymore.
-      // Score = committed (total_study_time) + DB live_study_minutes when studying.
-      // Every device computes the identical value → identical ranks everywhere.
-      const totalStudyMinutes = committedMinutes + (isStudying ? liveMinutes : 0);
-      const hasActiveTimer = isCurrentUser && timerIsRunning;
 
-      const xp = Number(u.xp || 0);
+      // ⭐ LIVE FRESHNESS: stale 'focus' (crashed/closed tab) → ignore
+      const updatedMs = u.updated_at ? new Date(u.updated_at).getTime() : 0;
+      const freshFocus = u.current_status === 'focus' && Date.now() - updatedMs < LIVE_FRESH_MS;
+      const isStudying = freshFocus || p.status === 'focus';
+
+      // ⭐ PERIOD OVERRIDE: daily/weekly/monthly হলে period stats থেকে base
+      const pst = periodStats[u.id];
+      const baseMinutes = period !== 'all' && pst ? Math.floor(pst.minutes) : committedMinutes;
+      const baseXp = period !== 'all' && pst ? Number(pst.xp || 0) : Number(u.xp || 0);
+
+      const totalStudyMinutes = baseMinutes + (isStudying ? liveMinutes : 0);
+      const xp = baseXp + (isStudying ? liveMinutes * 10 : 0);
       const level = Math.floor(xp / 1000) + 1;
+      const hasActiveTimer = isCurrentUser && timerIsRunning;
 
       return {
         id: u.id,
@@ -1028,7 +717,7 @@ export const EsportsRanking: React.FC = () => {
         streak: Number(u.streak || 0),
         bestStreak: Number(u.best_streak || 0),
         totalSessions: Number(u.total_sessions || 0),
-        isOnline: Boolean(p.status && p.status !== 'offline') || u.current_status === 'focus',
+        isOnline: Boolean(p.status && p.status !== 'offline') || freshFocus,
         isLive: isStudying,
         currentTask: String(p.topic || u.current_task || ''),
         sessionStartTime: isCurrentUser ? presence?.sessionStartTime || p.start_time : p.start_time,
@@ -1043,7 +732,6 @@ export const EsportsRanking: React.FC = () => {
         goals: [],
         recentActivity: [],
         achievements: [],
-        
         _isCurrentUser: isCurrentUser,
         _hasActiveTimer: hasActiveTimer,
         _rawDbStudyTime: committedMinutes,
@@ -1051,17 +739,16 @@ export const EsportsRanking: React.FC = () => {
         _presenceStatus: p.status || undefined,
       } as EsportsPlayer;
     });
-  }, [dbPlayers, presences, uid, presence?.sessionStartTime, timerIsRunning, timerSecondsElapsed]);
+  }, [dbPlayers, presences, uid, presence?.sessionStartTime, timerIsRunning, periodStats, period]);
+
+  // ⭐ DEMO OVERLAY: public players majhe-majhe পড়ে → rank নড়ে
+  const overlaidPlayers = useMemo(() => applyDemoOverlay(livePlayers), [livePlayers]);
 
   // -----------------------------------------------------------------------
-  // SORT + ASSIGN RANKS
+  // SORT + ASSIGN RANKS (metric-aware + self-bump)
   // -----------------------------------------------------------------------
-
-   const sortedPlayers = useMemo((): RankedPlayer[] => {
-    const players = [...livePlayers];
-
-    // ⭐ FIX E5: deterministic tie-breaks → tied players rank identically
-    // on every device (study/xp primary → secondary → unique id).
+  const sortedPlayers = useMemo((): RankedPlayer[] => {
+    const players = [...overlaidPlayers];
     players.sort((a, b) => {
       if (metric === 'study') {
         if ((b.studyTime || 0) !== (a.studyTime || 0)) return (b.studyTime || 0) - (a.studyTime || 0);
@@ -1072,51 +759,45 @@ export const EsportsRanking: React.FC = () => {
       }
       return String(a.id).localeCompare(String(b.id));
     });
+    const ranked = players.map((player, index) => ({ ...player, displayRank: index + 1 }));
 
-    const ranked = players.map((player, index) => ({
-      ...player,
-      displayRank: index + 1,
-    }));
-
-    // ⭐ FIX E1b: DISPLAY-ONLY self bump AFTER ranks are locked.
-    // Adds only the minutes your DB hasn't caught up with yet (~≤2min),
-    // ONLY to your own tile on your own screen. Order can never change.
+    // ⭐ SELF-BUMP: নিজের uncommitted minutes শুধু নিজের tile-এ add
     return ranked.map((player) => {
       if (!player._isCurrentUser || !timerIsRunning || timerSecondsElapsed <= 0) return player;
       const dbLiveMin = (player as any)._liveDbMinutes ?? 0;
-      const unsyncedMinutes = Math.max(0, Math.floor(timerSecondsElapsed / 60) - dbLiveMin);
-      if (unsyncedMinutes <= 0) return player;
-      return { ...player, studyTime: player.studyTime + unsyncedMinutes };
+      const unsynced = Math.max(0, Math.floor(timerSecondsElapsed / 60) - dbLiveMin);
+      if (unsynced <= 0) return player;
+      return {
+        ...player,
+        studyTime: metric === 'study' ? player.studyTime + unsynced : player.studyTime,
+        xp: metric === 'xp' ? player.xp + unsynced * 10 : player.xp,
+      };
     });
-  }, [livePlayers, metric, timerIsRunning, timerSecondsElapsed]);
+  }, [overlaidPlayers, metric, timerIsRunning, timerSecondsElapsed]);
 
-  // Top 3 + Rest Split
   const top3Players = sortedPlayers.slice(0, 3);
   const restPlayers = sortedPlayers.slice(3);
 
   // -----------------------------------------------------------------------
-  // FIND CURRENT USER'S POSITION
+  // CURRENT USER POSITION
   // -----------------------------------------------------------------------
-
   const currentUserData = useMemo((): RankedPlayer | undefined => {
     if (!uid) return undefined;
-
-    // First: try to find in sorted list
-    const found = sortedPlayers.find((player) => player.id === uid);
+    const found = sortedPlayers.find((pl) => pl.id === uid);
     if (found) return found;
-
-    // Fallback: construct from profile
     if (!currentUserProfile) return undefined;
 
     const p = presences[uid] || {};
-    const committedMinutes = Math.max(0, Math.floor(Number(currentUserProfile.total_study_time || 0)));
+    const updatedMs = currentUserProfile.updated_at ? new Date(currentUserProfile.updated_at).getTime() : 0;
+    const freshFocus = currentUserProfile.current_status === 'focus' && Date.now() - updatedMs < LIVE_FRESH_MS;
+    const userIsStudying = freshFocus || p.status === 'focus';
     const liveMinutes = Math.max(0, Math.floor(Number((currentUserProfile as any).live_study_minutes || 0)));
-    const userIsStudying = currentUserProfile.current_status === 'focus' || p.status === 'focus';
-    
-    // ⭐ FIX E6: same consistent formula as the main path — nothing device-local.
-    const studyTime = committedMinutes + (userIsStudying ? liveMinutes : 0);
 
-    const xp = Number(currentUserProfile.xp || 0);
+    const pst = periodStats[uid];
+    const committed = period !== 'all' && pst ? Math.floor(pst.minutes) : Math.max(0, Math.floor(Number(currentUserProfile.total_study_time || 0)));
+    const baseXp = period !== 'all' && pst ? Number(pst.xp || 0) : Number(currentUserProfile.xp || 0);
+    const studyTime = committed + (userIsStudying ? liveMinutes : 0);
+    const xp = baseXp + (userIsStudying ? liveMinutes * 10 : 0);
     const level = Math.floor(xp / 1000) + 1;
 
     return {
@@ -1156,23 +837,23 @@ export const EsportsRanking: React.FC = () => {
       displayRank: sortedPlayers.length + 1,
       _isCurrentUser: true,
       _hasActiveTimer: timerIsRunning && timerSecondsElapsed > 0,
-      _rawDbStudyTime: committedMinutes,
+      _rawDbStudyTime: committed,
       _presenceStatus: p.status || undefined,
     } as RankedPlayer;
-  }, [uid, sortedPlayers, currentUserProfile, presences, presence?.sessionStartTime, timerIsRunning, timerSecondsElapsed, timerTopicName]);
+  }, [uid, sortedPlayers, currentUserProfile, presences, presence?.sessionStartTime, timerIsRunning, timerSecondsElapsed, timerTopicName, periodStats, period]);
 
   const currentUserRank = currentUserData?.displayRank ?? 0;
 
   // -----------------------------------------------------------------------
   // DEBUG LOGGING
   // -----------------------------------------------------------------------
-
   useEffect(() => {
-    console.log('[EsportsRanking-v10] LIVE LEADERBOARD STATE:', {
+    console.log('[EsportsRanking-v11] LIVE LEADERBOARD STATE:', {
       uid,
       currentUser: currentUserData?.name || 'Not loaded',
       rank: currentUserRank,
       metric,
+      period,
       liveStudyMinutes: currentUserData?.studyTime || 0,
       totalPlayers: sortedPlayers.length,
       timerState: {
@@ -1188,8 +869,9 @@ export const EsportsRanking: React.FC = () => {
     uid,
     currentUserRank,
     metric,
+    period,
     sortedPlayers.length,
-    Math.floor(timerSecondsElapsed / 60), // ⭐ FIX E7: minute-granular, not every second
+    Math.floor(timerSecondsElapsed / 60),
     isLoading,
     error,
   ]);
@@ -1197,36 +879,20 @@ export const EsportsRanking: React.FC = () => {
   // -----------------------------------------------------------------------
   // RENDER
   // -----------------------------------------------------------------------
-
   return (
     <div
       className="relative w-full h-full flex flex-col overflow-hidden font-sans"
-      style={{
-        backgroundColor: COLORS.bgMain,
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-        minHeight: 0,
-      }}
+      style={{ backgroundColor: COLORS.bgMain, fontFamily: "'Plus Jakarta Sans', sans-serif", minHeight: 0 }}
     >
       {/* Demo Mode Warning */}
       {!uid && (
         <div className="shrink-0 mx-4 mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-xs font-bold text-center z-20 flex items-center justify-center gap-2">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            className="shrink-0"
-          >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
             <line x1="12" y1="9" x2="12" y2="13" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-          <span>
-            DEMO MODE: Your timer will NOT count towards the global leaderboard.
-            Please log in via the System Login page.
-          </span>
+          <span>DEMO MODE: Your timer will NOT count towards the global leaderboard. Please log in via the System Login page.</span>
         </div>
       )}
 
@@ -1234,24 +900,14 @@ export const EsportsRanking: React.FC = () => {
       {error && !isLoading && (
         <div className="shrink-0 mx-4 mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold text-center z-20 flex items-center justify-between">
           <span>{error}</span>
-          <button
-            onClick={() => window.location.reload()}
-            className="underline hover:text-red-200"
-          >
-            Retry
-          </button>
+          <button onClick={() => window.location.reload()} className="underline hover:text-red-200">Retry</button>
         </div>
       )}
 
       {/* Ambient Glow */}
       <div
         className="absolute top-0 left-0 right-0 pointer-events-none"
-        style={{
-          height: '300px',
-          background:
-            'radial-gradient(ellipse at 50% 0%, rgba(0, 229, 255, 0.12) 0%, transparent 70%)',
-          zIndex: 0,
-        }}
+        style={{ height: '300px', background: 'radial-gradient(ellipse at 50% 0%, rgba(0, 229, 255, 0.12) 0%, transparent 70%)', zIndex: 0 }}
       />
 
       {/* Header */}
@@ -1260,35 +916,20 @@ export const EsportsRanking: React.FC = () => {
           <div className="flex flex-col">
             <h1
               className="text-xl font-extrabold uppercase tracking-wider"
-              style={{
-                fontFamily: "'Lexend', sans-serif",
-                color: COLORS.c1st,
-                fontWeight: 800,
-                textShadow: '0 0 10px rgba(0, 229, 255, 0.3)',
-              }}
+              style={{ fontFamily: "'Lexend', sans-serif", color: COLORS.c1st, fontWeight: 800, textShadow: '0 0 10px rgba(0, 229, 255, 0.3)' }}
             >
               Ranking
             </h1>
             <span className="text-[10px] mt-0.5" style={{ color: COLORS.textMuted }}>
               Live • Realtime{' '}
               {!isLoading && lastUpdated && (
-                <span className="opacity-70">
-                  • Updated {Math.floor((Date.now() - lastUpdated.getTime()) / 1000)}s ago
-                </span>
+                <span className="opacity-70">• Updated {Math.floor((Date.now() - lastUpdated.getTime()) / 1000)}s ago</span>
               )}
               {isLoading && <span className="animate-pulse">• Loading...</span>}
             </span>
           </div>
-
           <div className="p-2 rounded-lg" style={{ color: COLORS.c1st }}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="16" x2="12" y2="12" />
               <line x1="12" y1="8" x2="12.01" y2="8" />
@@ -1296,114 +937,104 @@ export const EsportsRanking: React.FC = () => {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Metric Tabs */}
         <div className="flex gap-2.5 mt-4">
           <button
             onClick={() => setMetric('xp')}
-            className={`text-[11px] font-bold uppercase pb-1.5 border-b-2 transition-all ${
-              metric === 'xp' ? 'text-white border-[#00E5FF]' : 'border-transparent'
-            }`}
-            style={{
-              color: metric === 'xp' ? '#fff' : COLORS.textMuted,
-              fontWeight: 700,
-            }}
+            className={`text-[11px] font-bold uppercase pb-1.5 border-b-2 transition-all ${metric === 'xp' ? 'text-white border-[#00E5FF]' : 'border-transparent'}`}
+            style={{ color: metric === 'xp' ? '#fff' : COLORS.textMuted, fontWeight: 700 }}
           >
-            XP RANKING
+            XP Ranking
           </button>
-
           <button
             onClick={() => setMetric('study')}
-            className={`text-[11px] font-bold uppercase pb-1.5 border-b-2 transition-all ${
-              metric === 'study' ? 'text-white border-[#00E5FF]' : 'border-transparent'
-            }`}
-            style={{
-              color: metric === 'study' ? '#fff' : COLORS.textMuted,
-              fontWeight: 700,
-            }}
+            className={`text-[11px] font-bold uppercase pb-1.5 border-b-2 transition-all ${metric === 'study' ? 'text-white border-[#00E5FF]' : 'border-transparent'}`}
+            style={{ color: metric === 'study' ? '#fff' : COLORS.textMuted, fontWeight: 700 }}
           >
-            STUDY TIME
+            Study Time
           </button>
         </div>
+
+        {/* ⭐ Period Selector */}
+        <div className="flex gap-1.5 mt-3 flex-wrap items-center">
+          {(['daily', 'weekly', 'monthly', 'all'] as PeriodType[]).map((pt) => (
+            <button
+              key={pt}
+              onClick={() => setPeriod(pt)}
+              className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all"
+              style={{
+                background: period === pt ? 'rgba(0, 229, 255, 0.15)' : 'transparent',
+                color: period === pt ? COLORS.c1st : COLORS.textMuted,
+                border: `1px solid ${period === pt ? 'rgba(0, 229, 255, 0.5)' : COLORS.border}`,
+                fontFamily: "'Lexend', sans-serif",
+              }}
+            >
+              {pt === 'daily' ? 'আজ' : pt === 'weekly' ? 'সাপ্তাহিক' : pt === 'monthly' ? 'মাসিক' : 'সর্বকাল'}
+            </button>
+          ))}
+        </div>
+        <p className="text-[9px] mt-1.5" style={{ color: COLORS.textMuted }}>
+          {period === 'daily'
+            ? 'প্রতিদিন রাত ১২:০০টায় counter reset হয়'
+            : period === 'weekly'
+            ? 'সোমবার রাত ১২:০০টায় reset হয়'
+            : period === 'monthly'
+            ? 'মাসের ১ তারিখে reset হয়'
+            : 'সব সময়ের মোট হিসাব'}
+        </p>
       </div>
 
       {/* Scroll Area */}
-      <div
-        className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 pb-36"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-        }}
-      >
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 pb-36" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {/* Top 3 Podium */}
         {top3Players.length > 0 && (
           <div
             className="flex flex-row flex-nowrap justify-center items-end gap-4 md:gap-6 lg:gap-8 px-4 md:px-6 lg:px-8 py-6 md:py-8 pb-10"
             style={{ borderBottom: `1px solid ${COLORS.border}` }}
           >
-          {top3Players.length >= 2 && <PodiumCard player={top3Players[1]} rank={2} metric={metric} />}
-{top3Players.length >= 1 && <PodiumCard player={top3Players[0]} rank={1} metric={metric} />}
-{top3Players.length >= 3 && <PodiumCard player={top3Players[2]} rank={3} metric={metric} />}
+            {top3Players.length >= 2 && <PodiumCard player={top3Players[1]} rank={2} metric={metric} />}
+            {top3Players.length >= 1 && <PodiumCard player={top3Players[0]} rank={1} metric={metric} />}
+            {top3Players.length >= 3 && <PodiumCard player={top3Players[2]} rank={3} metric={metric} />}
           </div>
         )}
 
         {/* Rank 4+ List */}
         <div className="px-4 md:px-6 lg:px-8 flex flex-col gap-2 mt-2 max-w-3xl mx-auto w-full">
-       {restPlayers.map((player) => (
-  <ListItem
-    key={player.id}
-    player={player}
-    rank={player.displayRank}
-    metric={metric}
-    isCurrentUser={uid ? player.id === uid : false}
-    onClick={() => setSelectedUser(player)}
-  />
-))}
+          {restPlayers.map((player) => (
+            <ListItem
+              key={player.id}
+              player={player}
+              rank={player.displayRank}
+              metric={metric}
+              isCurrentUser={uid ? player.id === uid : false}
+              onClick={() => setSelectedUser(player)}
+            />
+          ))}
 
-          {/* Empty State */}
           {restPlayers.length === 0 && top3Players.length > 0 && (
             <div className="text-center py-8 opacity-50">
-              <p
-                className="text-xs tracking-widest uppercase"
-                style={{ color: COLORS.textMuted }}
-              >
+              <p className="text-xs tracking-widest uppercase" style={{ color: COLORS.textMuted }}>
                 No more rankings to display
               </p>
             </div>
           )}
 
-          {/* Loading State */}
           {sortedPlayers.length === 0 && isLoading && (
             <div className="text-center py-16">
               <div
                 className="inline-block w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mb-4"
                 style={{ borderColor: COLORS.c1st, borderTopColor: 'transparent' }}
               />
-              <p
-                className="text-xs uppercase tracking-widest animate-pulse"
-                style={{ color: COLORS.textMuted }}
-              >
+              <p className="text-xs uppercase tracking-widest animate-pulse" style={{ color: COLORS.textMuted }}>
                 Loading rankings...
               </p>
             </div>
           )}
 
-          {/* Error State */}
           {sortedPlayers.length === 0 && !isLoading && error && (
             <div className="text-center py-16">
-              <p
-                className="text-xs uppercase tracking-widest mb-4"
-                style={{ color: COLORS.c3rd }}
-              >
-                Failed to load
-              </p>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 rounded-lg text-xs font-bold"
-                style={{
-                  background: COLORS.cViolet,
-                  color: '#fff',
-                }}
-              >
+              <p className="text-xs uppercase tracking-widest mb-4" style={{ color: COLORS.c3rd }}>Failed to load</p>
+              <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg text-xs font-bold" style={{ background: COLORS.cViolet, color: '#fff' }}>
                 Retry
               </button>
             </div>
@@ -1413,25 +1044,19 @@ export const EsportsRanking: React.FC = () => {
 
       {/* Floating User Rank Card */}
       {currentUserData && (
-    <FloatingUserRank
-  player={currentUserData}
-  rank={currentUserRank}
-  metric={metric}
-  isLive={currentUserData.isLive || false}
-  hasActiveTimer={currentUserData._hasActiveTimer || false}
-  currentTask={currentUserData.currentTask}
-/>
+        <FloatingUserRank
+          player={currentUserData}
+          rank={currentUserRank}
+          metric={metric}
+          isLive={currentUserData.isLive || false}
+          hasActiveTimer={currentUserData._hasActiveTimer || false}
+          currentTask={currentUserData.currentTask}
+        />
       )}
 
       {/* Profile Modal */}
       {selectedUser && (
-        <div
-          className="fixed inset-0 overflow-y-auto"
-          style={{
-            backgroundColor: COLORS.bgMain,
-            zIndex: 9999,
-          }}
-        >
+        <div className="fixed inset-0 overflow-y-auto" style={{ backgroundColor: COLORS.bgMain, zIndex: 9999 }}>
           <ProfilePremiumView
             profile={mapToUserProfile(selectedUser)}
             todayKey={new Date().toISOString().split('T')[0]}

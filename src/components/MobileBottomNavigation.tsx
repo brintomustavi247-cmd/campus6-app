@@ -72,9 +72,9 @@ export const MobileBottomNavigation: React.FC<MobileBottomNavProps> = ({
                 <button
                   key={tab.id}
                   onClick={() => handleSelect(tab.id)}
-                  className={`flex items-center gap-3.5 p-3.5 rounded-xl border transition-all text-left min-h-[48px] ${
+                  className={`flex items-center gap-3.5 p-3.5 rounded-xl border transition-all text-left min-h-12 ${
                     activePage === tab.id
-                      ? 'bg-primary hover:bg-primary-hover text-white shadow-sm border border-transparent-500/40 text-text-primary shadow-md'
+                      ? 'bg-primary hover:bg-primary-hover text-text-primary border border-transparent-500/40 shadow-md'
                       : 'bg-surface-muted border-border text-text-secondary hover:from-red-500 hover:to-yellow-500'
                   }`}
                 >
@@ -101,14 +101,14 @@ export const MobileBottomNavigation: React.FC<MobileBottomNavProps> = ({
               <button
                 key={tab.id}
                 onClick={() => handleSelect(tab.id)}
-                className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-h-[48px] min-w-[56px] ${
+                className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-h-12 min-w-14 ${
                   isActive ? 'text-gold font-bold' : 'text-text-muted hover:text-text-primary'
                 }`}
               >
                 <div className={isActive ? 'scale-110 transition-transform' : ''}>
                   {tab.icon}
                 </div>
-                <span className="text-[10px] mt-0.5  truncate max-w-[64px]">
+                <span className="text-[10px] mt-0.5 truncate max-w-16">
                   {tab.labelBn}
                 </span>
               </button>
@@ -117,7 +117,7 @@ export const MobileBottomNavigation: React.FC<MobileBottomNavProps> = ({
 
           <button
             onClick={() => setIsMoreOpen(true)}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-h-[48px] min-w-[56px] ${
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-h-12 min-w-14 ${
               isMoreOpen ? 'text-gold font-bold' : 'text-text-muted hover:text-text-primary'
             }`}
           >

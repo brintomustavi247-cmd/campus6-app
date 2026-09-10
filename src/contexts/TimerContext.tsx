@@ -616,6 +616,17 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
       } catch (error) {
         console.warn('[Timer] Failed to queue partial session:', error);
       }
+
+      // ⭐ LIVE-STUCK FIX: tab বন্ধ করলে "focus" status forever থেকে যেত।
+      // এখন pagehide-এ live preview clear → অন্য device-এ ভুল live badge দেখাবে না।
+      const closeUid = effectiveUserIdRef.current;
+      if (closeUid) {
+        supabase
+          .from('users')
+          .update({ live_study_minutes: 0, current_status: 'offline' })
+          .eq('id', closeUid)
+          .then(undefined, () => {});
+      }
     };
 
     window.addEventListener('beforeunload', queueUnflushedRemainder);
