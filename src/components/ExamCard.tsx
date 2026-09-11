@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Award, ArrowRight, Radio, CalendarClock } from 'lucide-react';
+import { PH_EXAM_PORTAL } from '../data/phSubjectLinks';
 import { getExamWindow } from '../utils/classExamWindow';
 import { useClassLinks } from '../utils/useClassLinks';
 
@@ -14,6 +15,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenExamPrep }) => {
   // ⭐ Live countdown tick (৩০ সেকেন্ড পর পর)
   const [, setTick] = useState(0);
+  const { links } = useClassLinks(dateKey || '');
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 30_000);
     return () => clearInterval(id);
@@ -24,8 +26,7 @@ export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenEx
   if (!win || win.status === 'ended') return null;
 
   const isLive = win.status === 'live';
-    // ⭐ Scraper-এর আনা live exam link (এক্সাম দেই → deep url)
-  const { links } = useClassLinks(dateKey || '');
+  // ⭐ Scraper-এর আনা live exam link (এক্সাম দেই → deep url)
   const examLink = links.find((l: any) => l.link_type === 'exam');
   const totalWindow = 24 * 60;
   const elapsed = Math.min(totalWindow, Math.max(0, totalWindow - win.minutesRemaining));

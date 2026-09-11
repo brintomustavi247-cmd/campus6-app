@@ -72,6 +72,7 @@ import { createUserInSupabaseIfNotExists } from './services/db';
 import { AppShell } from './components/AppShell';
 import { DashboardView } from './views/DashboardView';
 import { PwaInstallModal } from './components/PwaInstall';
+import { startScheduler, stopScheduler } from './utils/studyNotifications';
 import { getUnreadCount, generateSmartNotifications, saveNotification, requestNotificationPermission, sendBrowserNotification } from './utils/smartNotifications';
 import { useClassExamReminders } from './utils/useClassExamReminders';
 import { initTimerCompletionFeedback } from './utils/timerCompletionFeedback';
@@ -700,6 +701,13 @@ export function App() {
     );
   }
 
+
+  useEffect(() => {
+    startScheduler();
+    return () => {
+      stopScheduler();
+    };
+  }, []);
   // ========================================================================
   // AUTH LOADING GATE
   // ========================================================================
