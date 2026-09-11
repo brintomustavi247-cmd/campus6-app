@@ -1,0 +1,28 @@
+name: Fetch Class Links
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # প্রতি ঘণ্টায়
+  workflow_dispatch:       # manual button
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: cd automation && npm install
+      - run: cd automation && npm start
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          PH_USERNAME: ${{ secrets.PH_USERNAME }}
+          PH_PASSWORD: ${{ secrets.PH_PASSWORD }}
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug
+          path: automation/debug.*

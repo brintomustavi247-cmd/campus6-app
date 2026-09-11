@@ -1,0 +1,13 @@
+{
+  "name": "campus6-automation",
+  "version": "1.0.0",
+  "main": "fetch-class-links.js",
+  "scripts": {
+    "start": "node fetch-class-links.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1",
+    "puppeteer": "^21.6.1"
+  }
+}

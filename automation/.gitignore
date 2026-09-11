@@ -1,0 +1,6 @@
+node_modules/
+.env
+debug.png
+debug.html
+ph-cookies.json
+ph-cookies-base64.txt

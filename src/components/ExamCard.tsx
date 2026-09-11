@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Award, ArrowRight, Radio, CalendarClock } from 'lucide-react';
 import { getExamWindow } from '../utils/classExamWindow';
+import { useClassLinks } from '../utils/useClassLinks';
 
 interface ExamCardProps {
   examTopic?: string;
@@ -23,6 +24,9 @@ export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenEx
   if (!win || win.status === 'ended') return null;
 
   const isLive = win.status === 'live';
+    // ⭐ Scraper-এর আনা live exam link (এক্সাম দেই → deep url)
+  const { links } = useClassLinks(dateKey || '');
+  const examLink = links.find((l: any) => l.link_type === 'exam');
   const totalWindow = 24 * 60;
   const elapsed = Math.min(totalWindow, Math.max(0, totalWindow - win.minutesRemaining));
   const progress = isLive ? (elapsed / totalWindow) * 100 : 0;
@@ -167,8 +171,11 @@ export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenEx
           {/* ─── CTA row ─── */}
           <div className="mt-4 flex items-center gap-2">
             {onOpenExamPrep && (
-              <button
-                onClick={onOpenExamPrep}
+             <button
+              onClick={() => {
+                if (examLink?.url) window.open(examLink.url, '_blank');
+                else onOpenExamPrep?.();
+              }}
                 className="flex-1 px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] bn"
                 style={{
                   background: isLive ? 'linear-gradient(135deg,#EF4444,#DC2626)' : 'linear-gradient(135deg,#FBBF24,#D97706)',
@@ -176,7 +183,7 @@ export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenEx
                   color: isLive ? '#fff' : '#0F111A',
                 }}
               >
-                {isLive ? 'এখনই শুরু করুন' : 'প্রস্তুতি নিন'}
+                      {isLive ? (examLink ? '🎯 এক্সাম দেই' : 'এখনই শুরু') : 'প্রস্তুতি নিন'}
                 <ArrowRight className="w-4 h-4" />
               </button>
             )}
