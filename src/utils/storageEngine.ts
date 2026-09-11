@@ -279,12 +279,32 @@ export async function syncProgressToCloud(progress: DailyProgress): Promise<void
 }
 
 // -------------------------------------------------------------
-// STREAK CALCULATOR ENGINE (70% Rule)
+// STREAK CALCULATOR ENGINE (10 MIN THRESHOLD)
 // -------------------------------------------------------------
+//
+// ⭐ NEW RULES:
+// 1. কোনো দিনে কমপক্ষে ১০ মিনিট পড়াশোনা করলে সেই দিন "active" গণ্য
+// 2. Streak = continuous active days (আজ থেকে পিছনের দিকে যত দিন ১০+ মিনিট)
+// 3. আজ যদি এখনো ১০ মিনিট না পড়েন → yesterday পর্যন্ত streak গণনা হবে
+// 4. কোনো gap (দিন ১০ মিনিটের নিচে) → streak = 0 থেকে restart
+//
+// DATA SOURCES (union of both):
+//   • dailyProgress store (studyHours × 60 = minutes)
+//   • timerSessions (durationMinutes directly)
+//
+// ⚠️ TimerContext (v7 Single Writer) সব actual study time timerSessions-এ
+//    save করে, তাই সেটা বেশি accurate। Daily progress শুধু supplementary।
+//
+// Returns: { currentStreak, bestStreak, daysAbove70Count }
+//          StreakCard component-এর সাথে compatible রাখতে interface একই।
+// -------------------------------------------------------------
+
+const MIN_STUDY_THRESHOLD = 10; // ⭐ ১০ মিনিট
+
 export interface StreakResult {
   currentStreak: number;
   bestStreak: number;
-  daysAbove70Count: number;
+  daysAbove70Count: number; // now = total "active" days (10+ min)
 }
 
 export function calculateStreak(todayDateKey: string): StreakResult {
@@ -292,67 +312,84 @@ export function calculateStreak(todayDateKey: string): StreakResult {
     return streakCache.result;
   }
 
-  let currentStreak = 0;
-  let bestStreak = 0;
-  let tempStreak = 0;
-  let daysAbove70Count = 0;
+  // ─── STEP 1: Build minutesByDay map from BOTH sources ───
+  const minutesByDay: Record<string, number> = {};
 
-  // Inspect existing progress entries in localStorage for fast evaluation
-  const localStorageDateKeys: string[] = [];
+  // Source A: daily progress (studyHours × 60)
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(STORAGE_KEYS.DAILY_PROGRESS_PREFIX)) {
-      const dKey = key.replace(STORAGE_KEYS.DAILY_PROGRESS_PREFIX, '');
-      if (dKey <= todayDateKey) {
-        localStorageDateKeys.push(dKey);
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const p = JSON.parse(raw);
+        const dKey = key.replace(STORAGE_KEYS.DAILY_PROGRESS_PREFIX, '');
+        const hours = Number(p?.studyHours || 0);
+        minutesByDay[dKey] = (minutesByDay[dKey] || 0) + hours * 60;
+      } catch {
+        /* skip corrupted */
       }
     }
   }
 
-  const sortedDates = Array.from(new Set(localStorageDateKeys)).sort();
-
-  sortedDates.forEach(dateKey => {
-    const p = getDailyProgressReadOnly(dateKey);
-    const pass = p.completionPercent >= 70;
-
-    if (pass) {
-      daysAbove70Count++;
-      tempStreak++;
-      if (tempStreak > bestStreak) {
-        bestStreak = tempStreak;
-      }
-    } else {
-      tempStreak = 0;
+  // Source B: timer sessions (durationMinutes directly — more accurate)
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.TIMER_SESSIONS);
+    if (raw) {
+      const sessions = JSON.parse(raw) as TimerSession[];
+      sessions.forEach((s) => {
+        if (s?.dateKey && typeof s.durationMinutes === 'number') {
+          minutesByDay[s.dateKey] = (minutesByDay[s.dateKey] || 0) + s.durationMinutes;
+        }
+      });
     }
-  });
+  } catch {
+    /* skip corrupted */
+  }
 
-  // Calculate current streak working backwards from today or yesterday
-  let checkDate = new Date(`${todayDateKey}T00:00:00`);
-  let maxSearchDays = 60; // Guard against infinite loop
-  
-  while (maxSearchDays > 0) {
-    maxSearchDays--;
-    const isoStr = checkDate.toISOString().split('T')[0];
-    if (isoStr < '2026-08-01') break; // Early exit before baseline
+  // ─── STEP 2: Walk backwards from today, counting continuous active days ───
+  let currentStreak = 0;
+  let bestStreak = 0;
+  let tempStreak = 0;
+  let activeDaysCount = 0;
 
-    const p = getDailyProgressReadOnly(isoStr);
-    
-    if (p.completionPercent >= 70) {
-      currentStreak++;
-      checkDate.setDate(checkDate.getDate() - 1);
+  const d = new Date(`${todayDateKey}T00:00:00`);
+  const maxSearchDays = 365;
+
+  for (let i = 0; i < maxSearchDays; i++) {
+    const dayKey = d.toISOString().split('T')[0];
+
+    // Hard stop before baseline date
+    if (dayKey < '2026-08-01') break;
+
+    const mins = minutesByDay[dayKey] || 0;
+    const isActive = mins >= MIN_STUDY_THRESHOLD;
+
+    if (isActive) {
+      activeDaysCount++;
+      tempStreak++;
+      currentStreak = tempStreak;
+      if (tempStreak > bestStreak) bestStreak = tempStreak;
     } else {
-      if (isoStr === todayDateKey) {
-        checkDate.setDate(checkDate.getDate() - 1);
+      // Gap found — stop counting current streak
+      // (but keep bestStreak as the historical max)
+      if (i === 0) {
+        // আজ এখনো ১০ মিনিট হয়নি — আজকে skip করে yesterday থেকে শুরু
+        tempStreak = 0;
+        currentStreak = 0;
+        d.setDate(d.getDate() - 1);
         continue;
       }
       break;
     }
+
+    d.setDate(d.getDate() - 1);
   }
 
-  const result = {
+  const result: StreakResult = {
     currentStreak,
     bestStreak: Math.max(bestStreak, currentStreak),
-    daysAbove70Count
+    daysAbove70Count: activeDaysCount, // reused field = total active days
   };
 
   streakCache = { todayDateKey, result };

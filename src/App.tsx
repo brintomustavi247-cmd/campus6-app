@@ -74,6 +74,7 @@ import { DashboardView } from './views/DashboardView';
 import { PwaInstallModal } from './components/PwaInstall';
 import { getUnreadCount, generateSmartNotifications, saveNotification, requestNotificationPermission, sendBrowserNotification } from './utils/smartNotifications';
 import { useClassExamReminders } from './utils/useClassExamReminders';
+import { initTimerCompletionFeedback } from './utils/timerCompletionFeedback';
 
 // ============================================================================
 // LAZY-LOADED VIEWS (Code Splitting for Performance)
@@ -672,6 +673,20 @@ export function App() {
   // 🔔 CLASS/EXAM REMINDER ENGINE (all pages-এ active থাকবে)
   // ========================================================================
   useClassExamReminders({ onAddToast: addToast });
+      // ========================================================================
+  // 🔔 TIMER COMPLETION FEEDBACK (vibrate + notification — GLOBAL)
+  // ========================================================================
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Dynamic import যাতে mobile-এ crash না করে
+      import('./utils/timerCompletionFeedback').then((mod) => {
+        mod.initTimerCompletionFeedback();
+        console.log('[App] ✅ Timer completion feedback initialized');
+      }).catch((err) => {
+        console.warn('[App] Timer feedback init failed:', err);
+      });
+    }
+  }, []);
 
   // ========================================================================
   // AUTH CALLBACK ROUTE (must precede all gates)

@@ -56,7 +56,27 @@ export const AppShell: React.FC<AppShellProps> = ({
     return () => window.removeEventListener('campus6:notifications-changed', onChange);
   }, [refreshNotifs]);
 
-  const openDrawer = () => {
+  const openDrawer = async () => {
+    // ⭐ FIRST CLICK-এ permission চাই (user gesture — mobile Chrome-এ কাজ করে)
+    if ('Notification' in window && Notification.permission === 'default') {
+      try {
+        const result = await Notification.requestPermission();
+        console.log('[Bell] 🔔 Permission result:', result);
+        if (result === 'granted') {
+          try {
+            new Notification('🔔 Notifications Enabled!', {
+              body: 'Timer complete হলে এখন phone vibrate + notification পাবেন।',
+              icon: '/icons/icon-192.png',
+              badge: '/icons/icon-192.png',
+            });
+          } catch { /* noop */ }
+        }
+        refreshNotifs();
+      } catch (err) {
+        console.error('[Bell] Permission request failed:', err);
+      }
+    }
+    
     setIsNotificationOpen(true);
     refreshNotifs();
   };

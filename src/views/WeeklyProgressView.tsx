@@ -77,15 +77,26 @@ export const WeeklyProgressView: React.FC<WeeklyProgressViewProps> = ({
 
   return (
     <div className="space-y-6 pb-16 animate-in fade-in">
-      {/* Top Banner */}
-      <div className="p-6 rounded-3xl bg-surface border border-border shadow-xl text-text-primary flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
+      {/* Top Banner — Premium */}
+      <div className="relative overflow-hidden p-6 rounded-3xl bg-surface border border-border shadow-xl text-text-primary flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="absolute top-0 left-0 right-0 h-0.75" style={{ background: 'linear-gradient(90deg,#DC143C,#FBBF24,#10B981)' }} />
+        <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full blur-3xl pointer-events-none" style={{ background: 'rgba(251,191,36,0.08)' }} />
+        
+        <div className="relative z-10">
           <div className="flex items-center gap-2 mb-1 text-gold">
             <BarChart3 className="w-5 h-5" />
-            <span className="text-xs font-bold">Study Time Analytics</span>
+            <span className="text-xs font-bold bn">সাপ্তাহিক বিশ্লেষণ</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-text-primary">
-            {range === '7' ? 'Last 7 Days' : 'Last 30 Days'} Performance
+          <h2 
+            className="text-xl sm:text-2xl font-black"
+            style={{
+              background: 'linear-gradient(90deg,#FFFFFF,#FBBF24)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}
+          >
+            {range === '7' ? 'গত ৭ দিনের পারফরম্যান্স' : 'গত ৩০ দিনের পারফরম্যান্স'}
           </h2>
           <p className="text-xs sm:text-sm text-text-secondary/90 mt-1">
             Total: <span className="font-extrabold text-gold">{fmtMin(totalMinutes)}</span>

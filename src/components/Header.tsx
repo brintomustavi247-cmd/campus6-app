@@ -1,12 +1,9 @@
 /**
  * ============================================================================
- * CAMPUS 6.0 - HEADER COMPONENT (v8.0 — ProfileAvatar integrated)
+ * CAMPUS 6.0 - HEADER COMPONENT (v10.0 — Mobile Compact + Premium Logo)
  * ============================================================================
- * FIXES:
- * 1. ✅ firebase `auth` import REMOVED (Supabase migration-এর পরে ওটা dead weight ছিল)
- * 2. ✅ Avatar logic এখন ProfileAvatar component-এ (single source of truth)
- * 3. ✅ Google OAuth avatar: profile → live Supabase session → letter fallback
- * 4. ✅ React.memo + accessibility বজায়
+ * Mobile: single-row 56px header, no wrap, compact buttons
+ * Desktop: full branding with subtitle + glow
  * ============================================================================
  */
 import React, { memo } from 'react';
@@ -16,9 +13,6 @@ import { LiveClock } from './LiveClock';
 import { ProfileAvatar } from './ProfileAvatar';
 import { PwaInstallHeaderButton } from './PwaInstall';
 
-/* ═══════════════════════════════════════════════════════════
-   TYPES
-   ═══════════════════════════════════════════════════════════ */
 interface HeaderProps {
   activePage?: string;
   profile: UserProfile;
@@ -27,12 +21,10 @@ interface HeaderProps {
   onOpenProfile: () => void;
   onSyncNow?: () => void;
   onOpenNotification: () => void;
-  unreadNotifications?: number; // ⭐ NEW
+  unreadNotifications?: number;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   STATUS BADGE (online / offline / syncing)
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ STATUS BADGE ═══ */
 const StatusBadge: React.FC<{
   isOnline: boolean;
   isPendingSync: boolean;
@@ -67,9 +59,7 @@ const StatusBadge: React.FC<{
 });
 StatusBadge.displayName = 'StatusBadge';
 
-/* ═══════════════════════════════════════════════════════════
-   DEMO BADGE
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ DEMO BADGE ═══ */
 const DemoBadge: React.FC = memo(() => (
   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 text-xs font-medium">
     <Swords className="w-3.5 h-3.5" />
@@ -78,9 +68,7 @@ const DemoBadge: React.FC = memo(() => (
 ));
 DemoBadge.displayName = 'DemoBadge';
 
-/* ═══════════════════════════════════════════════════════════
-   MAIN HEADER
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ MAIN HEADER v10 ═══ */
 export const Header: React.FC<HeaderProps> = memo(({
   activePage,
   profile,
@@ -89,31 +77,110 @@ export const Header: React.FC<HeaderProps> = memo(({
   onOpenProfile,
   onSyncNow,
   onOpenNotification,
-  unreadNotifications = 0, // ⭐ NEW (default 0)
+  unreadNotifications = 0,
 }) => {
   const displayName: string = profile.displayName || profile.nickname || 'Student';
   const isDemoMode: boolean = !!profile.isDemo || !profile.uid;
 
   return (
-    <header className="sticky top-0 z-40 bg-bg-elevated backdrop-blur-md border-b border-border text-text-primary shadow-md" role="banner">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-        {/* ═══ LEFT: Logo / Page title ═══ */}
-        <div className="flex items-center gap-3">
+    <header
+      className="sticky top-0 z-40 backdrop-blur-xl border-b border-border text-text-primary shadow-lg relative"
+      style={{ background: 'rgba(16,18,26,0.88)' }}
+      role="banner"
+    >
+      <style>{`
+        @keyframes logoShine { 0% { transform: translateX(-130%) skewX(-15deg); } 60%, 100% { transform: translateX(230%) skewX(-15deg); } }
+        @keyframes logoPulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+      `}</style>
+
+      {/* rainbow hairline bottom */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(220,20,60,0.6), rgba(251,191,36,0.6), rgba(53,214,255,0.5), transparent)' }}
+      />
+
+      {/* ⭐ single-row compact container */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
+        {/* ═══ LEFT: Logo ═══ */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           {activePage === 'leaderboard' ? (
-            <h1 className="font-orbitron font-black italic tracking-widest text-2xl text-yellow-400 drop-shadow-[0_0_12px_rgba(250,204,21,0.6)]">
+            <h1
+              className="font-black italic tracking-widest text-xl sm:text-2xl whitespace-nowrap"
+              style={{
+                fontFamily: "'Orbitron', sans-serif",
+                background: 'linear-gradient(90deg,#FBBF24,#F87171)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+                filter: 'drop-shadow(0 0 12px rgba(250,204,21,0.45))',
+              }}
+            >
               RANKING
             </h1>
           ) : (
             <>
-              <div className="w-9 h-9 rounded-xl bg-linear-to-br from-gold to-gold-bright flex items-center justify-center text-bg font-black text-sm shadow-md select-none">
-                6.0
+              {/* logo mark */}
+              <div className="relative shrink-0">
+                <span
+                  className="absolute -inset-1 sm:-inset-1.5 rounded-2xl pointer-events-none"
+                  style={{
+                    background: 'radial-gradient(circle, rgba(251,191,36,0.3), transparent 70%)',
+                    filter: 'blur(6px)',
+                    animation: 'logoPulse 3s ease-in-out infinite',
+                  }}
+                />
+                <div
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center relative overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg,#DC143C 0%,#FBBF24 100%)',
+                    boxShadow: '0 4px 16px rgba(220,20,60,0.45), inset 0 1px 0 rgba(255,255,255,0.3)',
+                  }}
+                >
+                  <span
+                    className="font-black text-xs sm:text-sm text-white relative z-10"
+                    style={{ fontFamily: "'Orbitron', sans-serif", textShadow: '0 1px 3px rgba(0,0,0,0.45)' }}
+                  >
+                    6.0
+                  </span>
+                  <span
+                    className="absolute inset-0"
+                    style={{
+                      background: 'linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.45) 50%, transparent 65%)',
+                      animation: 'logoShine 3.8s ease-in-out infinite',
+                    }}
+                  />
+                </div>
               </div>
-              <div>
-                <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-text-primary leading-tight flex items-center gap-1.5">
-                  CAMPUS 6.0
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold text-bg font-mono font-bold">PRO</span>
+
+              {/* wordmark — NEVER wraps */}
+              <div className="leading-none min-w-0">
+                <h1 className="flex items-center gap-1.5" style={{ flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+                  <span
+                    className="text-[13px] sm:text-base font-black tracking-wider whitespace-nowrap"
+                    style={{
+                      fontFamily: "'Orbitron', sans-serif",
+                      background: 'linear-gradient(90deg,#FFFFFF 0%,#FBBF24 80%)',
+                      WebkitBackgroundClip: 'text',
+                      backgroundClip: 'text',
+                      color: 'transparent',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    CAMPUS 6.0
+                  </span>
+                  <span
+                    className="hidden min-[380px]:inline-block text-[8px] px-1.5 py-0.5 rounded-md font-mono font-bold text-white shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#DC143C,#9E0E29)', boxShadow: '0 2px 8px rgba(220,20,60,0.45)' }}
+                  >
+                    PRO
+                  </span>
                 </h1>
-                <p className="text-[10px] text-text-muted font-medium">Daily Study Engine</p>
+                <p
+                  className="hidden sm:block text-[9px] text-text-muted font-medium mt-1 uppercase tracking-[0.22em]"
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                >
+                  Daily Study Engine
+                </p>
               </div>
             </>
           )}
@@ -125,26 +192,24 @@ export const Header: React.FC<HeaderProps> = memo(({
           <StatusBadge isOnline={isOnline} isPendingSync={isPendingSync} onSyncNow={onSyncNow} />
         </div>
 
-        {/* ═══ RIGHT: Clock + Install + Bell + Profile ═══ */}
-        <div className="flex items-center gap-2 ml-auto">
+        {/* ═══ RIGHT: compact buttons ═══ */}
+        <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
           <LiveClock />
 
-          {/* 📲 PWA Install button (notification bell-এর পাশে) */}
           <PwaInstallHeaderButton />
 
           <button
             onClick={onOpenNotification}
-            className="group relative w-10 h-10 rounded-full flex items-center justify-center bg-[#1E2030] border border-white/10 hover:bg-white/5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="group relative shrink-0 rounded-full flex items-center justify-center bg-[#1E2030] border border-white/10 hover:bg-white/5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            style={{ width: 40, height: 40 }}
             aria-label="Open notifications"
             aria-haspopup="dialog"
             title="Notifications"
           >
-            <Bell className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" />
-
-            {/* ⭐ Red dot — শুধু unread থাকলে দেখাবে */}
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 group-hover:text-white transition-colors" />
             {unreadNotifications > 0 && (
               <span
-                className="absolute top-2 right-2.5 min-w-4.5 h-4.5 px-1 bg-red-500 rounded-full animate-pulse flex items-center justify-center text-[10px] font-bold text-white"
+                className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full animate-pulse flex items-center justify-center text-[9px] font-bold text-white"
                 style={{ boxShadow: '0 0 8px rgba(239,68,68,0.6)' }}
                 aria-hidden="true"
               >
@@ -153,14 +218,14 @@ export const Header: React.FC<HeaderProps> = memo(({
             )}
           </button>
 
-          {/* 🎯 PROFILE BUTTON — এখন ProfileAvatar ব্যবহার করছে */}
           <button
             onClick={onOpenProfile}
-            className="flex items-center gap-2 p-1.5 pr-3 rounded-xl bg-surface-muted hover:bg-surface-hover border border-border text-text-primary transition-all min-h-11 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 group"
+            className="flex items-center gap-2 shrink-0 rounded-xl bg-surface-muted hover:bg-surface-hover border border-border text-text-primary transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 group"
+            style={{ height: 40, paddingLeft: 6, paddingRight: 6 }}
             aria-label={`Open profile for ${displayName}`}
             title={`Profile: ${displayName}`}
           >
-            <ProfileAvatar profile={profile} size={34} />
+            <ProfileAvatar profile={profile} size={32} />
             <span className="hidden sm:inline text-xs font-bold truncate max-w-27.5 group-hover:text-gold transition-colors" title={displayName}>
               {displayName}
             </span>

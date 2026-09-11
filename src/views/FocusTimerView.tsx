@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TimerSession, SubjectCategory } from '../types';
 import { FocusTimer } from '../components/FocusTimer';
+import { useGlobalTimer } from '../contexts/TimerContext'; // ⭐ FIXED: plural path
 import { Clock, Swords, CheckCircle2, History, Zap, Trophy } from 'lucide-react';
 
 interface FocusTimerViewProps {
@@ -17,9 +18,23 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
   initialSubject
 }) => {
   const totalFocusMins = recentSessions.reduce((acc, curr) => acc + curr.durationMinutes, 0);
+  
+  const { isRunning } = useGlobalTimer();
+  
+  // ⭐ Detect auto-start from dashboard (hash flag)
+  const [autoStarted] = useState(() => {
+    const hash = window.location.hash;
+    if (hash.includes('#autostart=2min')) {
+      // Clean hash immediately
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      return true;
+    }
+    return false;
+  });
+
 
   return (
-    <div className="space-y-6  pb-16 animate-in fade-in">
+    <div className="space-y-6 pb-16 animate-in fade-in">
       {/* Header Banner */}
       <div className="p-6 rounded-3xl bg-linear-to-r from-cyan-950 to-surface border border-cyan-800/60 shadow-xl text-text-primary text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 text-cyan-400 border-cyan-500/40 text-xs font-bold mb-2">
@@ -29,8 +44,8 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
         <h2 className="text-2xl font-black text-text-primary">
           ডেইলি ফোকাস ও স্টাডি টাইমার
         </h2>
-        <p className="text-xs text-text-secondary/90  mt-1">
-          পড়ায় মন না বসলে প্রথমে মাত্র ২ মিনিটের জন্য Start Mode চালু করো। পড়ার ফ্লো তৈরি হয়ে যাবে!
+        <p className="text-xs text-text-secondary/90 mt-1">
+          পড়ায় মন না বসলে প্রথমে মাত্র ২ মিনিটের জন্য Start Mode চালু করো। পড়ার ফ্লো তৈরি হয়ে যাবে!
         </p>
       </div>
 
@@ -39,13 +54,14 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
         onSessionComplete={onSessionComplete}
         initialTopic={initialTopic}
         initialSubject={initialSubject}
+        skipSetup={autoStarted}
       />
 
       {/* Timer Session History & Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-5 rounded-2xl bg-surface border border-cyan-900/50 shadow-lg text-text-primary flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold   text-cyan-400">আজকের মোট ফোকাস সময়</span>
+            <span className="text-xs font-bold text-cyan-400">আজকের মোট ফোকাস সময়</span>
             <p className="text-2xl font-black text-text-primary font-mono mt-1">
               {totalFocusMins} <span className="text-xs font-normal text-cyan-400">মিনিট</span>
             </p>
@@ -57,7 +73,7 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
 
         <div className="p-5 rounded-2xl bg-surface border border-cyan-900/50 shadow-lg text-text-primary flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold   text-cyan-400">সম্পন্ন ফোকাস সেশন</span>
+            <span className="text-xs font-bold text-cyan-400">সম্পন্ন ফোকাস সেশন</span>
             <p className="text-2xl font-black text-cyan-400 font-mono mt-1">
               {recentSessions.length} <span className="text-xs font-normal text-cyan-400">টি</span>
             </p>
@@ -69,7 +85,7 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
 
         <div className="p-5 rounded-2xl bg-surface border border-cyan-900/50 shadow-lg text-text-primary flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold   text-cyan-400">পড়াশোনার ফ্লো রেটিং</span>
+            <span className="text-xs font-bold text-cyan-400">পড়াশোনার ফ্লো রেটিং</span>
             <p className="text-2xl font-black text-cyan-400 font-mono mt-1">
               {recentSessions.length >= 3 ? 'High Flow 🔥' : 'Moderate'}
             </p>
@@ -89,7 +105,7 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
 
         {recentSessions.length === 0 ? (
           <p className="text-xs text-cyan-400/70 italic py-4 text-center">
-            এখনো কোনো ফোকাস সেশন সম্পন্ন হয়নি। টাইমার চালু করে পড়া শেষ করো!
+            এখনো কোনো ফোকাস সেশন সম্পন্ন হয়নি। টাইমার চালু করে পড়া শেষ করো!
           </p>
         ) : (
           <div className="space-y-2">

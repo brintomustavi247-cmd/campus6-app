@@ -804,12 +804,22 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
           }
         }
 
-        try {
+                     try {
           await withTimeout(
             Promise.resolve(notifyCompletion(completionSession)),
             DB_TIMEOUT_MS,
             'onSessionComplete-callback',
           );
+          
+          // ⭐ Dispatch global event for vibrate + notification
+          try {
+            window.dispatchEvent(
+              new CustomEvent('campus6:timer-completed', { detail: completionSession })
+            );
+            console.log('[Timer] ✅ Dispatched campus6:timer-completed:', completionSession);
+          } catch (dispatchErr) {
+            console.error('[Timer] dispatch failed:', dispatchErr);
+          }
         } catch (error) {
           console.error('[Timer] onSessionComplete failed:', error);
         }

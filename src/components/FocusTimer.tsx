@@ -9,6 +9,7 @@ interface FocusTimerProps {
   onSessionComplete?: (session: TimerSession) => void;
   initialTopic?: string;
   initialSubject?: SubjectCategory;
+  skipSetup?: boolean; // ⭐ auto-start from dashboard
 }
 
 const QUOTES = [
@@ -29,6 +30,7 @@ export const FocusTimer: React.FC<FocusTimerProps> = ({
   onSessionComplete,
   initialTopic = 'সাধারণ পড়া',
   initialSubject = 'Physics',
+  skipSetup = false,
 }) => {
   const {
     isRunning, secondsLeft, mode, topicName,
@@ -43,12 +45,16 @@ export const FocusTimer: React.FC<FocusTimerProps> = ({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pendingStart, setPendingStart] = useState<{ mode: any; duration: number } | null>(null);
 
-  // Light quote rotation while idle
+  // ⭐ Auto-start 2min mode when coming from dashboard
   useEffect(() => {
-    if (isRunning) return;
-    const id = window.setInterval(() => setQuoteIndex(q => (q + 1) % QUOTES.length), 8000);
-    return () => window.clearInterval(id);
-  }, [isRunning]);
+    if (!skipSetup || isRunning) return;
+    
+    // Directly start 2min timer, bypassing all setup
+    setTimeout(() => {
+      setGlobalTopic('Quick Focus Session');
+      startTimer('2min', 'Quick Focus Session', 120);
+    }, 200);
+  }, [skipSetup, isRunning, startTimer, setGlobalTopic]);
 
   const handleModeChange = (newMode: typeof mode) => {
     if (newMode === 'custom' || newMode === '50min' || newMode === '15min') {
@@ -73,6 +79,13 @@ export const FocusTimer: React.FC<FocusTimerProps> = ({
     if (hasPausedSession) { resumeTimer(); return; }
 
     const trueInitialDuration = getModeDuration(mode, customMins);
+    
+    // ⭐ Skip picker for 2min mode (quick start philosophy)
+    if (mode === '2min') {
+      startTimer(mode, topicName || 'Quick Focus Session', trueInitialDuration);
+      return;
+    }
+    
     if (getTopicPickerMode() === 'syllabus') {
       setPendingStart({ mode, duration: trueInitialDuration });
       setPickerOpen(true);

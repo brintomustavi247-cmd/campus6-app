@@ -20,7 +20,8 @@ export const PwaInstallHeaderButton: React.FC = () => {
   return (
     <button
       onClick={() => window.dispatchEvent(new CustomEvent('campus6:open-install'))}
-      className="group relative w-10 h-10 rounded-full flex items-center justify-center bg-[#0A1220]/90 border border-[#35D6FF]/35 hover:border-[#35D6FF]/75 hover:bg-[#35D6FF]/10 shadow-[0_0_16px_rgba(53,214,255,0.12)] hover:shadow-[0_0_22px_rgba(53,214,255,0.35)] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#35D6FF]/45"
+      className="group relative shrink-0 rounded-full flex items-center justify-center bg-[#0A1220]/90 border border-[#35D6FF]/35 hover:border-[#35D6FF]/75 hover:bg-[#35D6FF]/10 shadow-[0_0_16px_rgba(53,214,255,0.12)] hover:shadow-[0_0_22px_rgba(53,214,255,0.35)] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#35D6FF]/45"
+      style={{ width: 40, height: 40 }}
       title="অ্যাপ ইনস্টল করুন"
       aria-label="Install CAMPUS 6.0"
     >
