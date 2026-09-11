@@ -84,7 +84,7 @@ export const Header: React.FC<HeaderProps> = memo(({
 
   return (
     <header
-      className="sticky top-0 z-40 backdrop-blur-xl border-b border-border text-text-primary shadow-lg relative"
+      className="sticky top-0 z-40 backdrop-blur-xl border-b border-border text-text-primary shadow-lg"
       style={{ background: 'rgba(16,18,26,0.88)' }}
       role="banner"
     >
@@ -209,7 +209,7 @@ export const Header: React.FC<HeaderProps> = memo(({
             <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 group-hover:text-white transition-colors" />
             {unreadNotifications > 0 && (
               <span
-                className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full animate-pulse flex items-center justify-center text-[9px] font-bold text-white"
+                className="absolute top-1.5 right-1.5 min-w-4 h-4 px-1 bg-red-500 rounded-full animate-pulse flex items-center justify-center text-[9px] font-bold text-white"
                 style={{ boxShadow: '0 0 8px rgba(239,68,68,0.6)' }}
                 aria-hidden="true"
               >

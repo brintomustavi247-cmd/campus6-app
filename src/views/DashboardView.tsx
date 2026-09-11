@@ -134,11 +134,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="relative shrink-0">
                 <div
-                  className="w-12 h-12 sm:w-[72px] sm:h-[72px] rounded-full p-[2.5px] sm:p-[3px]"
+                  className="w-12 h-12 sm:w-18 sm:h-18 rounded-full p-0.5 sm:p-0.75"
                   style={{ background: 'linear-gradient(135deg,#DC143C,#FBBF24,#35D6FF)', boxShadow: '0 0 20px rgba(251,191,36,0.3)' }}
                 >
                   <div className="w-full h-full rounded-full overflow-hidden bg-surface-muted border-2 border-[#0C0D12]">
-                    <ProfileAvatar profile={profile} size={72} />
+                    {(profile.photoURL || profile.avatar_url) ? (
+                      <img
+                        src={(profile.photoURL || profile.avatar_url) as string}
+                        alt={profile.nickname || 'Profile'}
+                        className="w-full h-full object-cover"
+                        style={{ objectPosition: 'center 25%' }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary to-gold text-white font-black text-base sm:text-xl">
+                        {(profile.nickname || profile.displayName || 'S').charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <span
@@ -168,10 +179,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   {profile.nickname || 'শিক্ষার্থী'}
                 </h1>
                 <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
-                  <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold bg-white/[0.05] border border-white/10 text-text-secondary backdrop-blur-sm bn truncate max-w-[170px]">
+                  <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold bg-white/5 border border-white/10 text-text-secondary backdrop-blur-sm bn truncate max-w-42.5">
                     🎯 {profile.targetUniversity}
                   </span>
-                  <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold bg-white/[0.05] border border-white/10 text-text-secondary backdrop-blur-sm bn">
+                  <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold bg-white/5 border border-white/10 text-text-secondary backdrop-blur-sm bn">
                     🧬 {profile.academicGroup}
                   </span>
                 </div>
@@ -180,7 +191,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             {/* ⭐ mobile-only info chips (glass panel-এর বদলে) */}
             <div className="flex flex-wrap gap-1.5 mt-3 lg:hidden">
-              <span className="px-2 py-1 rounded-full text-[9px] font-bold bg-white/[0.05] border border-white/10 text-text-secondary bn">
+              <span className="px-2 py-1 rounded-full text-[9px] font-bold bg-white/5 border border-white/10 text-text-secondary bn">
                 📅 {dateLabel}
               </span>
               {nextSession && nextWin && (
@@ -206,7 +217,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </button>
               <button
                 onClick={onOpenShareModal}
-                className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-text-primary transition-all min-h-10 min-w-10 flex items-center justify-center"
+                className="p-2 rounded-xl bg-white/6 hover:bg-white/12 border border-white/10 text-text-primary transition-all min-h-10 min-w-10 flex items-center justify-center"
                 title="Share Progress"
               >
                 <Share2 className="w-4 h-4 text-gold" />
@@ -216,7 +227,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           {/* RIGHT: glass panel — desktop only */}
           <div
-            className="hidden lg:flex rounded-2xl border border-white/10 p-4 flex-col gap-2.5 min-w-[260px]"
+            className="hidden lg:flex rounded-2xl border border-white/10 p-4 flex-col gap-2.5 min-w-65"
             style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(10px)' }}
           >
             <div className="flex items-center gap-2 text-[11px] text-text-secondary bn">
@@ -241,7 +252,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </button>
               <button
                 onClick={onOpenShareModal}
-                className="p-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-text-primary transition-all min-h-11 min-w-11 flex items-center justify-center"
+                className="p-2.5 rounded-xl bg-white/6 hover:bg-white/12 border border-white/10 text-text-primary transition-all min-h-11 min-w-11 flex items-center justify-center"
                 title="Share Progress"
               >
                 <Share2 className="w-4 h-4 text-gold" />
