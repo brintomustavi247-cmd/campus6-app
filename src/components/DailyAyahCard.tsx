@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Copy, Check, Lightbulb } from 'lucide-react';
+import { Copy, Check, Lightbulb, Gem } from 'lucide-react';
 import { DAILY_AYAHS } from '../data/dailyAyah';
-
+import { claimAyah, isClaimed } from '../utils/ayahCollection';
+import { feedbackSuccess } from '../utils/alertFeedback';
 /**
  * ⭐ Daily Ayah Card — "Deep Minimal Luxury"
  *
@@ -20,6 +21,15 @@ export const DailyAyahCard: React.FC = () => {
   }, []);
 
   const [copied, setCopied] = useState(false);
+    const [claimed, setClaimed] = useState(isClaimed(today.id));
+
+  const handleClaim = () => {
+    const item = claimAyah(today.id);
+    if (item) {
+      setClaimed(true);
+      feedbackSuccess(); // ⭐ chime + vibrate
+    }
+  };
 
   const copyAyah = async () => {
     const text = `${today.arabic}\n${today.translit}\n"${today.bangla}"\n📌 ${today.reference}`;
@@ -44,7 +54,7 @@ export const DailyAyahCard: React.FC = () => {
 
       {/* ── ambient depth glows (whisper level) ── */}
       <div
-        className="absolute -top-24 left-1/2 -translate-x-1/2 w-[420px] h-[220px] rounded-full blur-3xl pointer-events-none"
+        className="absolute -top-24 left-1/2 -translate-x-1/2 w-105 h-55 rounded-full blur-3xl pointer-events-none"
         style={{ background: 'radial-gradient(ellipse, rgba(16,185,129,0.10), transparent 70%)' }}
       />
       <div
@@ -66,15 +76,17 @@ export const DailyAyahCard: React.FC = () => {
         ۞
       </span>
 
-      {/* ── copy button (ghost) ── */}
-      <button
-        onClick={copyAyah}
-        className="absolute top-4 right-4 z-20 p-2 rounded-lg text-text-muted hover:text-gold transition-colors"
-        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-        title="আয়াত কপি করুন"
-      >
-        {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-      </button>
+      {/* ── action buttons: claim + copy ── */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <button
+          onClick={copyAyah}
+          className="p-2 rounded-lg text-text-muted hover:text-gold transition-colors"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+          title="আয়াত কপি করুন"
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+      </div>
 
       <div className="relative z-10 px-6 sm:px-10 py-8 sm:py-10 text-center">
         {/* ── label with hairlines ── */}
@@ -140,6 +152,48 @@ export const DailyAyahCard: React.FC = () => {
         >
           — {today.reference} —
         </p>
+                {/* ── 💎 GLORIOUS CLAIM BUTTON ── */}
+        <style>{`
+          @keyframes claimShine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
+          @keyframes claimPulse { 0%,100% { box-shadow: 0 6px 24px rgba(251,191,36,0.35); } 50% { box-shadow: 0 6px 34px rgba(251,191,36,0.55); } }
+        `}</style>
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={handleClaim}
+            disabled={claimed}
+            className="group relative overflow-hidden px-7 py-3 rounded-xl text-xs font-black bn transition-all hover:scale-[1.04] active:scale-[0.98]"
+            style={
+              claimed
+                ? {
+                    background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))',
+                    border: '1px solid rgba(16,185,129,0.5)',
+                    color: '#6EE7B7',
+                    boxShadow: '0 0 24px rgba(16,185,129,0.25)',
+                  }
+                : {
+                    background: 'linear-gradient(135deg,#FBBF24,#D97706 60%,#B45309)',
+                    color: '#0F111A',
+                    border: '1px solid rgba(255,255,255,0.25)',
+                    animation: 'claimPulse 2.6s ease-in-out infinite',
+                  }
+            }
+          >
+            {/* moving shine sweep */}
+            {!claimed && (
+              <span
+                className="absolute top-0 h-full w-1/2 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)',
+                  animation: 'claimShine 2.8s ease-in-out infinite',
+                }}
+              />
+            )}
+            <span className="relative flex items-center gap-2">
+              {claimed ? <Check className="w-4 h-4" /> : <Gem className="w-4 h-4" />}
+              {claimed ? 'সংগ্রহে যোগ হয়েছে ✓' : '✨ সংগ্রহ করুন'}
+            </span>
+          </button>
+        </div>
 
         {/* ── tip footer (hairline separated) ── */}
         {today.tip && (

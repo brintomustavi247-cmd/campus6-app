@@ -3,6 +3,8 @@ import { UserProfile, AcademicGroup, PreferredLanguage, AppTheme } from '../type
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PageId } from '../components/Sidebar';
 import { clearAllLocalData, seedDemoData, flushPendingSyncs } from '../utils/storageEngine';
+import { NotificationSettings } from '../components/NotificationSettings';
+import { AyahCollectionCard } from '../components/AyahCollectionCard';
 import { 
   Settings, 
   User, 
@@ -187,18 +189,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </select>
           </div>
         </div>
-               <div>
-         <label className="text-xs font-semibold text-text-secondary block mb-1">অ্যাপ থিম (App Theme)</label>
-         <select
-           value={theme}
-           onChange={e => setTheme(e.target.value as AppTheme)}
-           className="w-full px-3 py-2.5 rounded-xl bg-surface-muted border border-border text-text-primary text-xs focus:outline-none focus:border-gold"
-         >
-           <option value="dark">Dark Theme (ডিফল্ট)</option>
-           <option value="light">Light Theme</option>
-           <option value="system">System Default</option>
-         </select>
-       </div>
        
        {/* ⭐ NEW: Language selector */}
        <div>
@@ -297,7 +287,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
         </div>
       </div>
+      {/* ⭐ Daily Study Notifications */}
+      <NotificationSettings />
 
+      {/* ⭐ Ayah Collection */}
+      <AyahCollectionCard />
+
+      {/* Confirmation Modal for Clearing Storage */}
       {/* Confirmation Modal for Clearing Storage */}
       <ConfirmationModal
         isOpen={isClearModalOpen}

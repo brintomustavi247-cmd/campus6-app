@@ -8,8 +8,9 @@
  *  • Settings localStorage-এ save (user customize করতে পারবে)
  */
 
-import { PREMIUM_STUDY_TIPS, type StudyTip } from './dailyTips.ts';
+import { PREMIUM_STUDY_TIPS, type StudyTip } from './dailyTips';
 import { getPhLink } from './phLink';
+import { feedbackNotif } from './alertFeedback';
 
 export interface NotificationPreferences {
   enabled: boolean;
@@ -64,9 +65,8 @@ const sendNotification = (title: string, body: string, icon: string = '/icons/ic
   if (Notification.permission !== 'granted') return;
 
   try {
-    if ('vibrate' in navigator) {
-      navigator.vibrate([100, 50, 100]);
-    }
+    // app foreground-এ থাকলে pop sound + vibrate
+    if (document.visibilityState === 'visible') feedbackNotif();
 
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready

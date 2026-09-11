@@ -77,7 +77,7 @@ export const DailyRoutineCard: React.FC<DailyRoutineCardProps> = ({
           return (
             <div
               key={session.id}
-              className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition-all ${
+              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border transition-all ${
                 isLive
                   ? 'bg-primary/5 border-primary/50'
                   : isEnded
@@ -85,7 +85,8 @@ export const DailyRoutineCard: React.FC<DailyRoutineCardProps> = ({
                   : 'bg-surface-muted border-border hover:border-primary/30'
               }`}
             >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+              {/* LEFT */}
+              <div className="flex items-start gap-3 min-w-0">
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
                     isLive ? 'bg-primary text-white' : 'bg-surface-muted text-text-muted border border-border'
@@ -93,20 +94,13 @@ export const DailyRoutineCard: React.FC<DailyRoutineCardProps> = ({
                 >
                   {idx + 1}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-text-primary bn">{session.topic}</p>
-                  <div className="flex items-center gap-2 text-[11px] text-text-muted mt-0.5 flex-wrap">
-                    <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                      {session.subject}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {session.time}
-                    </span>
+                  <div className="flex items-center gap-1.5 text-[11px] text-text-muted mt-1 flex-wrap">
+                    <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">{session.subject}</span>
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{session.time}</span>
                     {isLive && (
-                      <span className="px-2 py-0.5 rounded-full bg-danger/20 text-danger font-bold text-[10px] animate-pulse">
-                        LIVE
-                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-danger/20 text-danger font-bold text-[10px] animate-pulse">LIVE</span>
                     )}
                     {targetUrl && !isEnded && (
                       <span className="px-2 py-0.5 rounded-full bg-success/15 text-success font-bold text-[10px] flex items-center gap-1">
@@ -117,24 +111,18 @@ export const DailyRoutineCard: React.FC<DailyRoutineCardProps> = ({
                 </div>
               </div>
 
-              {/* ⭐ SMART BUTTONS */}
-              <div className="flex items-center gap-2 shrink-0">
+              {/* BUTTONS — mobile-এ নিচে full width */}
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                 {targetUrl && !isEnded ? (
                   <>
-                    {/* 🎯 MAIN: Physics Hunter খোলে */}
                     <button
                       onClick={() => window.open(targetUrl, '_blank')}
-                      className="px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all hover:scale-[1.04] flex items-center gap-1.5 bn"
-                      style={{
-                        background: 'linear-gradient(135deg,#10B981,#059669)',
-                        boxShadow: '0 3px 12px rgba(16,185,129,0.4)',
-                        color: '#fff',
-                      }}
+                      className="flex-1 sm:flex-none px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all hover:scale-[1.02] flex items-center justify-center gap-1.5 bn"
+                      style={{ background: 'linear-gradient(135deg,#10B981,#059669)', boxShadow: '0 3px 12px rgba(16,185,129,0.4)', color: '#fff' }}
                     >
                       <Video className="w-4 h-4" />
                       {isLive ? 'Join Live' : 'ক্লাস'}
                     </button>
-                    {/* ⏱ SECONDARY: timer */}
                     {onStartFocusTimer && (
                       <button
                         onClick={() => onStartFocusTimer(session)}
@@ -146,14 +134,12 @@ export const DailyRoutineCard: React.FC<DailyRoutineCardProps> = ({
                     )}
                   </>
                 ) : (
-                  /* link নেই → আগের মতো timer button */
                   onStartFocusTimer && !isEnded && (
                     <button
                       onClick={() => onStartFocusTimer(session)}
-                      className="p-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white transition-all shrink-0"
-                      title="পড়া শুরু করুন (টাইমার)"
+                      className="flex-1 sm:flex-none p-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white transition-all flex items-center justify-center gap-1.5 bn"
                     >
-                      <Play className="w-4 h-4" />
+                      <Play className="w-4 h-4" /> পড়া শুরু
                     </button>
                   )
                 )}

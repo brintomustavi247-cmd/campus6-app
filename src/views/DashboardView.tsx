@@ -1,4 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { EmotionalPopup } from '../components/EmotionalPopup';
+import { getEmotionalNote, markActive, EmotionalNote } from '../utils/emotionalNotifications';
+import { feedbackNotif } from '../utils/alertFeedback';
 import { UserProfile, DailyProgress, ClassSession } from '../types';
 import { getRoutineForDate } from '../data/routineData';
 import { DailyAyahCard } from '../components/DailyAyahCard';
@@ -49,6 +52,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onStartTimerWithSession,
   onOpenShareModal,
 }) => {
+  const [emoNote, setEmoNote] = useState<EmotionalNote | null>(null);
+
+  useEffect(() => {
+    markActive();
+    const t = setTimeout(() => {
+      const n = getEmotionalNote();
+      if (n) {
+        setEmoNote(n);
+        feedbackNotif();
+      }
+    }, 2500);
+    return () => clearTimeout(t);
+  }, []);
+
   const routine = getRoutineForDate(todayKey);
   const streak = calculateStreak(todayKey);
   const streakCount = (streak as any)?.count ?? (streak as any)?.current ?? (streak as any)?.days ?? 0;
@@ -104,7 +121,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* LEFT: identity */}
           <div className="flex items-center gap-4 min-w-0">
             <div className="relative shrink-0">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full p-[2px]" style={{ background: 'linear-gradient(135deg,#DC143C,#FBBF24)' }}>
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full p-0.5" style={{ background: 'linear-gradient(135deg,#DC143C,#FBBF24)' }}>
                 <div className="w-full h-full rounded-full overflow-hidden bg-surface-muted border-2 border-[#0C0D12]">
                   {(profile.photoURL || profile.avatar_url) ? (
                     <img
@@ -399,6 +416,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </div>
+
+      {emoNote && (
+        <EmotionalPopup
+          note={emoNote}
+          onStart={() => {
+            setEmoNote(null);
+            window.location.hash = '#autostart=2min';
+            onNavigate('focus_timer');
+          }}
+          onClose={() => setEmoNote(null)}
+        />
+      )}
     </div>
   );
 };

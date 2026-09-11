@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { feedbackNotif } from '../utils/alertFeedback';
 import { Bell, Clock, Save, Zap, BookOpen } from 'lucide-react';
 import {
   getNotifPrefs, saveNotifPrefs, NotificationPreferences,
@@ -8,6 +9,29 @@ import {
 export const NotificationSettings: React.FC = () => {
   const [prefs, setPrefs] = useState<NotificationPreferences>(getNotifPrefs());
   const [saved, setSaved] = useState(false);
+    const [testSent, setTestSent] = useState(false);
+
+  const handleTest = async () => {
+    if (!('Notification' in window)) {
+      alert('এই browser-এ notification support নেই।');
+      return;
+    }
+    if (Notification.permission === 'default') {
+      const r = await Notification.requestPermission();
+      if (r !== 'granted') {
+        alert('Permission দেওয়া হয়নি — তাই notification আসেনি।');
+        return;
+      }
+    }
+    if (Notification.permission !== 'granted') {
+      alert('⚠️ Notification BLOCK করা আছে। Browser Settings → Site Settings → Notifications → Allow করুন।');
+      return;
+    }
+    sendTestNotification();
+    feedbackNotif();
+    setTestSent(true);
+    setTimeout(() => setTestSent(false), 2500);
+  };
 
   const handleSave = async () => {
     if (prefs.enabled && 'Notification' in window && Notification.permission === 'default') {
@@ -92,10 +116,12 @@ export const NotificationSettings: React.FC = () => {
 
       <div className="flex gap-2 pt-2">
         <button
-          onClick={sendTestNotification}
-          className="flex-1 px-3 py-2.5 rounded-xl bg-surface-muted border border-border text-text-secondary text-xs font-bold flex items-center justify-center gap-1.5 bn hover:border-gold/50"
+          onClick={handleTest}
+          className="flex-1 px-3 py-2.5 rounded-xl bg-surface-muted border border-border text-text-secondary text-xs font-bold flex items-center justify-center gap-1.5 bn hover:border-gold/50 transition-all"
+          style={testSent ? { borderColor: 'rgba(16,185,129,0.6)', color: '#6EE7B7' } : undefined}
         >
-          <Zap className="w-3.5 h-3.5" /> Test Send
+          <Zap className="w-3.5 h-3.5" />
+          {testSent ? '✅ Sent!' : 'Test Send'}
         </button>
         <button
           onClick={handleSave}

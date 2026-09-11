@@ -1,7 +1,7 @@
 /**
  * CAMPUS 6.0 — Timer Completion Feedback (Global)
  */
-
+import { feedbackSuccess } from './alertFeedback';
 let isInitialized = false;
 
 export const initTimerCompletionFeedback = () => {
@@ -76,8 +76,8 @@ export const initTimerCompletionFeedback = () => {
       }
     };
 
-    // Run both
-    tryVibrate();
+    // ⭐ Chime sound + vibration একসাথে
+    feedbackSuccess();
     tryNotification();
   };
 

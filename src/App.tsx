@@ -76,6 +76,7 @@ import { startScheduler, stopScheduler } from './utils/studyNotifications';
 import { getUnreadCount, generateSmartNotifications, saveNotification, requestNotificationPermission, sendBrowserNotification } from './utils/smartNotifications';
 import { useClassExamReminders } from './utils/useClassExamReminders';
 import { initTimerCompletionFeedback } from './utils/timerCompletionFeedback';
+import { unlockAudio } from './utils/alertFeedback';
 
 // ============================================================================
 // LAZY-LOADED VIEWS (Code Splitting for Performance)
@@ -674,12 +675,10 @@ export function App() {
   // 🔔 CLASS/EXAM REMINDER ENGINE (all pages-এ active থাকবে)
   // ========================================================================
   useClassExamReminders({ onAddToast: addToast });
-      // ========================================================================
-  // 🔔 TIMER COMPLETION FEEDBACK (vibrate + notification — GLOBAL)
-  // ========================================================================
+
+  // 🔔 TIMER COMPLETION FEEDBACK (vibrate + sound — GLOBAL)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Dynamic import যাতে mobile-এ crash না করে
       import('./utils/timerCompletionFeedback').then((mod) => {
         mod.initTimerCompletionFeedback();
         console.log('[App] ✅ Timer completion feedback initialized');
@@ -689,10 +688,24 @@ export function App() {
     }
   }, []);
 
+  // 📬 DAILY STUDY NOTIFICATIONS SCHEDULER
+  useEffect(() => {
+    startScheduler();
+    return () => {
+      stopScheduler();
+    };
+  }, []);
+
+  // 🔊 AUDIO UNLOCK — mobile-এ first touch-এ AudioContext চালু হয়
+  useEffect(() => {
+    const un = () => unlockAudio();
+    window.addEventListener('pointerdown', un, { once: true });
+    return () => window.removeEventListener('pointerdown', un);
+  }, []);
+
   // ========================================================================
   // AUTH CALLBACK ROUTE (must precede all gates)
   // ========================================================================
-
   if (typeof window !== 'undefined' && window.location.pathname === '/auth/callback') {
     return (
       <Suspense fallback={<ViewLoadingFallback />}>
@@ -700,14 +713,6 @@ export function App() {
       </Suspense>
     );
   }
-
-
-  useEffect(() => {
-    startScheduler();
-    return () => {
-      stopScheduler();
-    };
-  }, []);
   // ========================================================================
   // AUTH LOADING GATE
   // ========================================================================

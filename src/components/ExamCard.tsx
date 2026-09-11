@@ -3,6 +3,7 @@ import { Award, ArrowRight, Radio, CalendarClock } from 'lucide-react';
 import { PH_EXAM_PORTAL } from '../data/phSubjectLinks';
 import { getExamWindow } from '../utils/classExamWindow';
 import { useClassLinks } from '../utils/useClassLinks';
+import { feedbackUrgent } from '../utils/alertFeedback';
 
 interface ExamCardProps {
   examTopic?: string;
@@ -174,8 +175,8 @@ export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenEx
             {onOpenExamPrep && (
              <button
               onClick={() => {
-                if (examLink?.url) window.open(examLink.url, '_blank');
-                else onOpenExamPrep?.();
+                feedbackUrgent();
+                window.open(examLink?.url || PH_EXAM_PORTAL, '_blank');
               }}
                 className="flex-1 px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] bn"
                 style={{
@@ -184,7 +185,7 @@ export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenEx
                   color: isLive ? '#fff' : '#0F111A',
                 }}
               >
-                      {isLive ? (examLink ? '🎯 এক্সাম দেই' : 'এখনই শুরু') : 'প্রস্তুতি নিন'}
+                      {isLive ? '🎯 এক্সাম দেই' : 'প্রস্তুতি নিন'}
                 <ArrowRight className="w-4 h-4" />
               </button>
             )}
