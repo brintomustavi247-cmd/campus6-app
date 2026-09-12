@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Award, ArrowRight, Radio, CalendarClock } from 'lucide-react';
+import { Award, ArrowRight, Radio, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { PH_EXAM_PORTAL } from '../data/phSubjectLinks';
 import { getExamWindow } from '../utils/classExamWindow';
 import { useClassLinks } from '../utils/useClassLinks';
@@ -9,11 +9,12 @@ interface ExamCardProps {
   examTopic?: string;
   dateKey?: string;
   onOpenExamPrep?: () => void;
+  onDismiss?: () => void;
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenExamPrep }) => {
+export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenExamPrep, onDismiss }) => {
   // ⭐ Live countdown tick (৩০ সেকেন্ড পর পর)
   const [, setTick] = useState(0);
   const { links } = useClassLinks(dateKey || '');
@@ -171,14 +172,14 @@ export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenEx
           </div>
 
           {/* ─── CTA row ─── */}
-          <div className="mt-4 flex items-center gap-2">
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
             {onOpenExamPrep && (
              <button
               onClick={() => {
                 feedbackUrgent();
                 window.open(examLink?.url || PH_EXAM_PORTAL, '_blank');
               }}
-                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] bn"
+                className="flex-1 min-w-[140px] px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] bn"
                 style={{
                   background: isLive ? 'linear-gradient(135deg,#EF4444,#DC2626)' : 'linear-gradient(135deg,#FBBF24,#D97706)',
                   boxShadow: isLive ? '0 4px 18px rgba(239,68,68,0.45)' : '0 4px 18px rgba(251,191,36,0.35)',
@@ -187,6 +188,20 @@ export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenEx
               >
                       {isLive ? '🎯 এক্সাম দেই' : 'প্রস্তুতি নিন'}
                 <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
+            {isLive && onDismiss && (
+              <button
+                onClick={onDismiss}
+                className="flex-1 min-w-[140px] px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] bn"
+                style={{
+                  background: 'linear-gradient(135deg,#10B981,#059669)',
+                  boxShadow: '0 4px 18px rgba(16,185,129,0.4)',
+                  color: '#fff',
+                }}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                পরীক্ষা দিয়েছি
               </button>
             )}
             <div

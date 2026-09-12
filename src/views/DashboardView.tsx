@@ -11,6 +11,8 @@ import { ProgressRing } from '../components/ProgressRing';
 import { StreakCard } from '../components/StreakCard';
 import { ExamCard } from '../components/ExamCard';
 import { DailyRoutineCard } from '../components/DailyRoutineCard';
+import { collectActiveExams } from '../utils/activeExams';
+import { dismissExam } from '../utils/examDismiss';
 import { PhysicsHunterLinkCard } from '../components/PhysicsHunterLinkCard';
 import { PH_QUICK_LINKS } from '../data/phSubjectLinks';
 import { getTodayTip } from '../utils/dailyTips';
@@ -83,6 +85,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     [routine, todayKey]
   );
   const nextWin = nextSession ? getClassWindow(nextSession, todayKey) : null;
+
+  const [, setExamTick] = useState(0);
+  useEffect(() => {
+    const refresh = () => setExamTick((tick) => tick + 1);
+    const id = window.setInterval(refresh, 30_000);
+    window.addEventListener('campus6:exam-dismissed', refresh);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('campus6:exam-dismissed', refresh);
+    };
+  }, []);
+
+  const activeExams = collectActiveExams(todayKey);
+  const liveExams = activeExams.filter((exam) => exam.status === 'live');
+  const upcomingExams = activeExams.filter((exam) => exam.status === 'upcoming');
 
   const pct = todayProgress.completionPercent;
   const targetHours = profile.dailyStudyTargetHours || 8;
@@ -317,13 +334,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             }}
           />
 
-          {routine.examTopic && (
+          {liveExams.map((exam) => (
             <ExamCard
-              examTopic={routine.examTopic}
-              dateKey={todayKey}
+              key={`live-${exam.dateKey}-${exam.examTopic}`}
+              examTopic={exam.examTopic}
+              dateKey={exam.dateKey}
+              onOpenExamPrep={() => onNavigate('daily_plan')}
+              onDismiss={() => dismissExam(exam.dateKey, exam.examTopic)}
+            />
+          ))}
+
+          {upcomingExams.map((exam) => (
+            <ExamCard
+              key={`upcoming-${exam.dateKey}-${exam.examTopic}`}
+              examTopic={exam.examTopic}
+              dateKey={exam.dateKey}
               onOpenExamPrep={() => onNavigate('daily_plan')}
             />
-          )}
+          ))}
         </div>
 
         <div className="space-y-4">

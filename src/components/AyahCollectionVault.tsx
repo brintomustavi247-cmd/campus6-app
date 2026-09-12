@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { X, BookMarked, Lock } from 'lucide-react';
-import { getCollection, CollectedAyah } from '../utils/ayahCollection';
+import { getCollection, CollectedAyah, hydrateCollectionFromCloud } from '../utils/ayahCollection';
 import { DAILY_AYAHS } from '../data/dailyAyah';
 
 /**
@@ -150,26 +150,30 @@ const VaultCard: React.FC<{ c: CollectedAyah; i: number }> = ({ c, i }) => {
           </p>
         </div>
 
-        {/* transliteration */}
+        {/* transliteration (উচ্চারণ) */}
         <p
-          className="text-center truncate px-3"
-          style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '8.5px', fontStyle: 'italic', color: 'rgba(255,255,255,0.55)' }}
+          className="text-center px-3"
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '9px',
+            lineHeight: 1.5,
+            fontStyle: 'italic',
+            color: 'rgba(255,255,255,0.6)',
+            wordBreak: 'break-word',
+          }}
         >
           {ayah.translit}
         </p>
 
-        {/* Bangla meaning */}
+        {/* ⭐ Bangla meaning — premium serif */}
         <p
           className="bn text-center px-2"
           style={{
-            fontSize: '10px',
-            lineHeight: 1.55,
-            color: 'rgba(255,255,255,0.82)',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            fontFamily: "'Tiro Bangla', 'Noto Serif Bengali', serif",
+            fontFamily: "'Tiro Bangla', 'Noto Serif Bengali', 'Anek Bangla', serif",
+            fontSize: '11px',
+            lineHeight: 1.7,
+            color: 'rgba(255,255,255,0.88)',
+            textShadow: '0 1px 2px rgba(0,0,0,0.4)',
           }}
         >
           "{ayah.bangla}"
@@ -223,6 +227,7 @@ export const AyahCollectionVault: React.FC<{ open: boolean; onClose: () => void 
   const [col, setCol] = useState<CollectedAyah[]>(getCollection());
 
   useEffect(() => {
+    void hydrateCollectionFromCloud();
     const onChange = () => setCol(getCollection());
     window.addEventListener('campus6:collection-changed', onChange);
     return () => window.removeEventListener('campus6:collection-changed', onChange);

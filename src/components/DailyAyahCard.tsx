@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Check, Lightbulb, Gem } from 'lucide-react';
 import { DAILY_AYAHS } from '../data/dailyAyah';
-import { claimAyah, isClaimed } from '../utils/ayahCollection';
+import { claimAyah, hydrateCollectionFromCloud, isClaimed } from '../utils/ayahCollection';
 import { feedbackSuccess } from '../utils/alertFeedback';
 /**
  * ⭐ Daily Ayah Card — "Deep Minimal Luxury"
@@ -21,7 +21,11 @@ export const DailyAyahCard: React.FC = () => {
   }, []);
 
   const [copied, setCopied] = useState(false);
-    const [claimed, setClaimed] = useState(isClaimed(today.id));
+  const [claimed, setClaimed] = useState(isClaimed(today.id));
+
+  useEffect(() => {
+    void hydrateCollectionFromCloud().then(() => setClaimed(isClaimed(today.id)));
+  }, [today.id]);
 
   const handleClaim = () => {
     const item = claimAyah(today.id);

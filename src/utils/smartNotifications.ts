@@ -161,8 +161,12 @@ const fallbackNotification = (title: string, opts: NotificationOptions) => {
 };
 
 export const sendBrowserNotification = (title: string, body: string, icon?: string) => {
-  if (typeof window === 'undefined' || !('Notification' in window)) return;
-  if (Notification.permission !== 'granted') return;
+  if (typeof window === 'undefined') return;
+  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    window.dispatchEvent(new CustomEvent('campus6:premium-notif', { detail: { title, body } }));
+    return;
+  }
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
   const opts: NotificationOptions & { vibrate?: number[] } = {
     body,

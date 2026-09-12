@@ -61,6 +61,11 @@ export const initTimerCompletionFeedback = () => {
           ? `${s.topicName} — ${s.durationMinutes} মিনিট সম্পন্ন!`
           : `${s.durationMinutes} মিনিট সম্পন্ন!`;
 
+        if (document.visibilityState === 'visible') {
+          window.dispatchEvent(new CustomEvent('campus6:premium-notif', { detail: { title, body } }));
+          return;
+        }
+
         const notif = new Notification(title, {
           body,
           icon: '/icons/icon-192.png',

@@ -113,8 +113,9 @@ let intervalId: number | null = null;
 
 export const startScheduler = () => {
   if (intervalId !== null) window.clearInterval(intervalId);
-
-  intervalId = window.setInterval(() => {
+  // ⭐ শুরুতেই একবার check (app খোলার সময় missed slot পাঠাবে)
+  setTimeout(() => window.dispatchEvent(new Event('campus6:notif-tick')), 3000);
+  const tick = () => {
     const prefs = getNotifPrefs();
     if (!prefs.enabled) return;
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -129,18 +130,30 @@ export const startScheduler = () => {
     const checkSlot = (slot: 'morning' | 'afternoon' | 'evening', time: string) => {
       const sentKey = `${todayKey}_${slot}`;
       if (lastSent[sentKey]) return;
-      if (nowHHMM === time) {
+
+      const nowMin = now.getHours() * 60 + now.getMinutes();
+      const [th, tm] = time.split(':').map(Number);
+      const diff = nowMin - (th * 60 + tm);
+
+      if (diff >= 0 && diff <= 120) {
+        // ⭐ সময় হলে বা ২ ঘণ্টার মধ্যে miss হলে catch-up send
         sendSlot(slot);
         lastSent[sentKey] = Date.now();
         localStorage.setItem(LAST_SENT_KEY, JSON.stringify(lastSent));
         console.log(`[Notif] ✅ ${slot} sent: ${time}`);
+      } else if (diff > 120) {
+        // ২ ঘণ্টার বেশি পুরনো → spam এড়াতে silently skip
+        lastSent[sentKey] = Date.now();
+        localStorage.setItem(LAST_SENT_KEY, JSON.stringify(lastSent));
       }
     };
 
     checkSlot('morning', prefs.morningTime);
     checkSlot('afternoon', prefs.afternoonTime);
     checkSlot('evening', prefs.eveningTime);
-  }, 30_000); // প্রতি ৩০ সেকেন্ডে check
+  };
+  intervalId = window.setInterval(tick, 30_000); // প্রতি ৩০ সেকেন্ডে check
+  setTimeout(tick, 3000); // ⭐ app খোলার ৩ সেক পর প্রথম check
 
   console.log('[Notif] 📬 Scheduler started');
 };

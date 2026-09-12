@@ -31,15 +31,26 @@ export const AvatarPicker: React.FC<Props> = ({
     (e.target as Element).setPointerCapture(e.pointerId);
     drag.current = { sx: e.clientX, sy: e.clientY, ox: localCrop.x, oy: localCrop.y };
   };
+  const cropRef = useRef(localCrop);
+  cropRef.current = localCrop;
+
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!drag.current || !vpRef.current) return;
+    const d = drag.current;
+    if (!d || !vpRef.current) return;
     const w = vpRef.current.clientWidth || 176;
-    const dx = ((e.clientX - drag.current.sx) / w) * 100;
-    const dy = ((e.clientY - drag.current.sy) / w) * 100;
+    const dx = ((e.clientX - d.sx) / w) * 100;
+    const dy = ((e.clientY - d.sy) / w) * 100;
     const m = maxPan(localCrop.zoom);
-    setLocalCrop((c) => ({ ...c, x: clamp(drag.current!.ox + dx, m), y: clamp(drag.current!.oy + dy, m) }));
+    const nx = clamp(d.ox + dx, m);
+    const ny = clamp(d.oy + dy, m);
+    setLocalCrop((c) => ({ ...c, x: nx, y: ny }));
   };
-  const onPointerUp = () => { drag.current = null; onCropChange(localCrop); };
+  const onPointerUp = () => {
+    if (!drag.current) return;
+    drag.current = null;
+    onCropChange(cropRef.current);
+  };
+  const onPointerCancel = () => { drag.current = null; };
 
   const setZoom = (z: number) => {
     const m = maxPan(z);
@@ -132,6 +143,9 @@ export const AvatarPicker: React.FC<Props> = ({
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
+                    onPointerCancel={onPointerCancel}
+                    onTouchEnd={onPointerUp}
+                    onTouchCancel={onPointerCancel}
                     className="relative mx-auto w-44 h-44 rounded-2xl overflow-hidden cursor-move touch-none select-none"
                     style={{ border: '2px solid rgba(251,191,36,0.6)', boxShadow: '0 0 0 4px rgba(251,191,36,0.12)' }}
                   >

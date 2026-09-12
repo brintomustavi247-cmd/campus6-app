@@ -79,6 +79,7 @@ import { initTimerCompletionFeedback } from './utils/timerCompletionFeedback';
 import { NotificationOnboarding } from './components/NotificationOnboarding';
 import { initAppUpdater } from './utils/appUpdater';
 import { UpdateBanner } from './components/UpdateBanner';
+import { PremiumNotificationPopup } from './components/PremiumNotificationPopup';
 import { unlockAudio } from './utils/alertFeedback';
 import { initLiveStatsSync } from './utils/liveStatsSync';
 
@@ -490,15 +491,28 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    const SENT_KEY = 'campus6_browser_notif_sent';
+    const getSent = (): Record<string, number> => {
+      try { return JSON.parse(localStorage.getItem(SENT_KEY) || '{}'); } catch { return {}; }
+    };
+
     const checkNotifications = () => {
       const notifs = generateSmartNotifications(todayKey);
+      const sentMap = getSent();
+      let changed = false;
+
       notifs.forEach(n => {
         saveNotification(n);
-        if (n.priority === 'urgent' || n.priority === 'high') {
+        const key = `${todayKey}_${n.id}`;
+        if ((n.priority === 'urgent' || n.priority === 'high') && !sentMap[key]) {
+          sentMap[key] = Date.now();
+          changed = true;
           sendBrowserNotification(`${n.emoji} ${n.title}`, n.message);
           addToast(n.priority === 'urgent' ? 'warning' : 'info', n.message, n.title);
         }
       });
+
+      if (changed) localStorage.setItem(SENT_KEY, JSON.stringify(sentMap));
       setUnreadNotifs(getUnreadCount());
     };
 
@@ -951,6 +965,7 @@ export function App() {
           onUpdate={() => { setShowUpdate(false); applyUpdateRef.current(); }}
           onDismiss={() => setShowUpdate(false)}
         />
+        <PremiumNotificationPopup />
     </>
   );
 }
