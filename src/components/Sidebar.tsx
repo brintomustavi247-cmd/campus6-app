@@ -23,6 +23,7 @@ export type PageId =
   | 'friends' 
   | 'settings' 
   | 'dev_panel'
+  | 'admin'
   | 'profile_premium'
   | 'rank_guide';
 

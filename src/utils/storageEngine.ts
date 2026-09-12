@@ -11,6 +11,9 @@ import { generateDefaultChecklist } from './checklistGenerator';
 import { db, auth } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
+/** Demo avatar pool - local imported avatars */
+const DEMO_AVATARS = Array.from({ length: 18 }, (_, i) => `/avatars/avatar-${i + 1}.png`);
+
 const STORAGE_KEYS = {
   USER_PROFILE: 'campus6_user_profile',
   DAILY_PROGRESS_PREFIX: 'campus6_progress_',
@@ -26,7 +29,8 @@ export const DEFAULT_DEMO_USER: UserProfile = {
   displayName: 'Student',
   nickname: 'Student',
   email: '',
-  photoURL: '',
+  photoURL: DEMO_AVATARS[0],
+  avatar_url: DEMO_AVATARS[0],
   academicGroup: 'Science',
   targetUniversity: '',
   dailyStudyTargetHours: 8,
@@ -103,7 +107,7 @@ export const DEFAULT_FRIENDS: FriendUser[] = [
     streakCount: 8,
     weeklyCompletionPercent: 92,
     totalStudyHours: 48,
-    photoURL: '',
+    photoURL: DEMO_AVATARS[1],
     lastActive: new Date().toISOString()
   },
   {
@@ -114,7 +118,7 @@ export const DEFAULT_FRIENDS: FriendUser[] = [
     streakCount: 6,
     weeklyCompletionPercent: 85,
     totalStudyHours: 40,
-    photoURL: '',
+    photoURL: DEMO_AVATARS[2],
     lastActive: new Date().toISOString()
   },
   {
@@ -125,7 +129,7 @@ export const DEFAULT_FRIENDS: FriendUser[] = [
     streakCount: 4,
     weeklyCompletionPercent: 78,
     totalStudyHours: 35,
-    photoURL: '',
+    photoURL: DEMO_AVATARS[3],
     lastActive: new Date().toISOString()
   }
 ];
@@ -542,7 +546,14 @@ export async function flushPendingSyncs(): Promise<number> {
 // DEMO DATA SEEDER
 // -------------------------------------------------------------
 export function seedDemoData(): void {
-  saveUserProfile(DEFAULT_DEMO_USER);
+  const demoProfile: UserProfile = {
+    ...DEFAULT_DEMO_USER,
+    photoURL: DEMO_AVATARS[0],
+    avatar_url: DEMO_AVATARS[0],
+    defaultAvatarId: 'av1',
+    useGooglePhoto: false,
+  };
+  saveUserProfile(demoProfile);
   localStorage.setItem(STORAGE_KEYS.SUBJECT_STATS, JSON.stringify(DEFAULT_SUBJECT_STATS));
   localStorage.setItem(STORAGE_KEYS.FRIENDS, JSON.stringify(DEFAULT_FRIENDS));
 

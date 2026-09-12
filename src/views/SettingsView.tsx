@@ -6,6 +6,9 @@ import { clearAllLocalData, seedDemoData, flushPendingSyncs } from '../utils/sto
 import { NotificationSettings } from '../components/NotificationSettings';
 import { PwaStatusCard } from '../components/PwaStatusCard';
 import { AyahCollectionCard } from '../components/AyahCollectionCard';
+import { AvatarPicker } from '../components/AvatarPicker';
+import { AvatarCrop, DEFAULT_CROP } from '../components/UserAvatar';
+import { getAvatarUrl } from '../utils/defaultAvatars';
 import { 
   Settings, 
   User, 
@@ -14,7 +17,8 @@ import {
   RefreshCw, 
   Code,
   LogIn,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -41,9 +45,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [dailyTargetHours, setDailyTargetHours] = useState<number>(profile.dailyStudyTargetHours || 8);
   const [preferredLanguage, setPreferredLanguage] = useState<PreferredLanguage>(profile.preferredLanguage || 'bn');
   const [theme, setTheme] = useState<AppTheme>(profile.theme || 'dark');
-  const [religion, setReligion] = useState(profile.religion || '');
-
+  const [useGooglePhoto, setUseGooglePhoto] = useState<boolean>(profile.useGooglePhoto !== false);
+  const [avatarCrop, setAvatarCrop] = useState<AvatarCrop>(profile.avatarCrop || DEFAULT_CROP);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+
+  const handleAvatarSelect = (id: string) => {
+    setUseGooglePhoto(false);
+    const url = getAvatarUrl(id);
+    onUpdateProfile({ ...profile, defaultAvatarId: id, useGooglePhoto: false, avatar_url: url, photoURL: url });
+    onAddToast('success', '🎭 Avatar আপডেট হয়েছে!');
+  };
+
+  const handleToggleGoogle = (v: boolean) => {
+    setUseGooglePhoto(v);
+    const g = profile.photoURL || profile.avatar_url || '';
+    const url = v ? g : getAvatarUrl(profile.defaultAvatarId || 'av1');
+    onUpdateProfile({ ...profile, useGooglePhoto: v, avatar_url: url, photoURL: url });
+  };
+
+  const handleCropChange = (c: AvatarCrop) => {
+    setAvatarCrop(c);
+    onUpdateProfile({ ...profile, avatarCrop: c });
+  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +79,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       dailyStudyTargetHours: Number(dailyTargetHours),
       preferredLanguage,
       theme,
-      religion: religion || undefined,
       updatedAt: new Date().toISOString()
     };
 
@@ -98,6 +120,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           প্রোফাইল তথ্য আপডেট, থিম পছন্দ এবং লোকাল স্টোরেজ সিঙ্ক ম্যানেজ করুন।
         </p>
       </div>
+      {/* 🎭 Avatar Picker */}
+      <AvatarPicker
+        googlePhotoUrl={profile.photoURL || profile.avatar_url}
+        currentAvatarId={profile.defaultAvatarId || 'av1'}
+        useGooglePhoto={profile.useGooglePhoto !== false}
+        crop={profile.avatarCrop || { zoom: 100, x: 0, y: 0 }}
+        onSelectDefault={handleAvatarSelect}
+        onToggleGoogle={handleToggleGoogle}
+        onCropChange={handleCropChange}
+      />
 
       {/* Profile Form */}
       <form onSubmit={handleSaveProfile} className="p-6 rounded-2xl bg-surface border border-border shadow-lg space-y-4">
@@ -162,21 +194,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             />
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1">ধর্ম (Religion)</label>
-            <select
-              value={religion}
-              onChange={e => setReligion(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl bg-surface-muted border border-border text-text-primary text-xs focus:outline-none focus:border-gold"
-            >
-              <option value="">নির্বাচন করুন</option>
-              <option value="Islam">Islam (ইসলাম)</option>
-              <option value="Hinduism">Hinduism (সনাতন)</option>
-              <option value="Buddhism">Buddhism (বৌদ্ধ)</option>
-              <option value="Christianity">Christianity (খ্রিস্টান)</option>
-              <option value="Other">Other (অন্যান্য)</option>
-            </select>
-          </div>
           <div>
             <label className="text-xs font-semibold text-text-secondary block mb-1">অ্যাপ থিম (App Theme)</label>
             <select
@@ -262,6 +279,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <Code className="w-4 h-4 text-gold" />
             Developer Test Suite
           </button>
+                    {profile.isAdmin && (
+            <button
+              onClick={() => onNavigate('admin')}
+              className="px-4 py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition-all flex items-center gap-2 min-h-11"
+            >
+              <Shield className="w-4 h-4" />
+              Admin Panel
+            </button>
+          )}
+
 
           <button
             onClick={() => onNavigate('login')}
@@ -289,11 +316,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </div>
       {/* ⭐ Daily Study Notifications */}
-      <NotificationSettings />      {/* ⭐ PWA Install Status */}
-      <PwaStatusCard />
-
-      {/* ⭐ Daily Study Notifications */}
       <NotificationSettings />
+
+      {/* ⭐ PWA Install Status */}
+      <PwaStatusCard />
 
       {/* ⭐ Ayah Collection */}
       <AyahCollectionCard />

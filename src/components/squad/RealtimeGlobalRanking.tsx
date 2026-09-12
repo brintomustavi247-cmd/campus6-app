@@ -4,6 +4,7 @@ import { EsportsPlayer } from './EsportsData';
 import { applyDemoOverlay } from '../../utils/demoActivitySimulator';
 import { PeriodType, periodKeyFor } from '../../utils/periodKeys';
 import { supabase } from '../../supabaseClient';
+import { DEFAULT_AVATARS } from '../../utils/defaultAvatars';
 
 // ═══════════════════════════════════════════════════════════
 // CAMPUS 6.0 PRO — PODIUM LEADERBOARD (v11 — All Fixes)
@@ -60,9 +61,11 @@ const fmtScore = (metric: Metric, p: { xp?: number; studyTime?: number }): strin
     : fmt(Number(p.studyTime || 0));
 
 const avatarUrl = (p?: EsportsPlayer) =>
-  p?.avatar && p.avatar.startsWith('http')
+  p?.avatar && (p.avatar.startsWith('http') || p.avatar.startsWith('/avatars/'))
     ? p.avatar
-    : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p?.name || 'Player')}&backgroundColor=171924`;
+    : DEFAULT_AVATARS[
+      Array.from(p?.name || 'Player').reduce((sum, char) => sum + char.charCodeAt(0), 0) % DEFAULT_AVATARS.length
+    ].url;
 
 // ============================================================================
 // SUB-COMPONENTS

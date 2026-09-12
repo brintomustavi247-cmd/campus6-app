@@ -80,6 +80,7 @@ import { NotificationOnboarding } from './components/NotificationOnboarding';
 import { initAppUpdater } from './utils/appUpdater';
 import { UpdateBanner } from './components/UpdateBanner';
 import { unlockAudio } from './utils/alertFeedback';
+import { initLiveStatsSync } from './utils/liveStatsSync';
 
 // ============================================================================
 // LAZY-LOADED VIEWS (Code Splitting for Performance)
@@ -99,6 +100,7 @@ const DevTestPanel = lazy(() => import('./components/DevTestPanel').then(m => ({
 const OnboardingWizard = lazy(() => import('./components/OnboardingWizard').then(m => ({ default: m.OnboardingWizard })));
 const ShareProgressModal = lazy(() => import('./components/ShareProgressModal').then(m => ({ default: m.ShareProgressModal })));
 const AuthCallback = lazy(() => import('./AuthCallback').then(m => ({ default: m.AuthCallback })));
+const AdminView = lazy(() => import('./views/AdminView').then(m => ({ default: m.AdminView })));
 
 // ============================================================================
 // CONSTANTS
@@ -332,6 +334,18 @@ export function App() {
         });
 
         const currentProfile = getLocalUserProfile();
+
+        // ⭐ Admin flag fetch
+        let isAdminFlag = false;
+        try {
+          const { data: adminRow } = await supabase
+            .from('users')
+            .select('is_admin')
+            .eq('id', user.id)
+            .single();
+          isAdminFlag = !!adminRow?.is_admin;
+        } catch {}
+
         const updatedProfile: UserProfile = {
           ...currentProfile,
           uid: user.id,
@@ -342,6 +356,7 @@ export function App() {
           avatar_url: avatarUrl,
           updatedAt: new Date().toISOString(),
           isDemo: false,
+          isAdmin: isAdminFlag,
         };
 
         saveLocalOnlyUserProfile(updatedProfile);
@@ -353,6 +368,13 @@ export function App() {
           avatar_url: avatarUrl || null,
           email: user.email || null,
         });
+
+                // ⭐ Last active timestamp (admin panel-এ "Last Login" দেখাবে)
+        supabase
+          .from('users')
+          .update({ last_active: new Date().toISOString() })
+          .eq('id', user.id)
+          .then(() => {}, () => {});
 
         if (!created) {
           console.warn('[App] Supabase identity sync failed (non-fatal)');
@@ -707,6 +729,12 @@ export function App() {
     window.addEventListener('pointerdown', un, { once: true });
     return () => window.removeEventListener('pointerdown', un);
   }, []);
+    // ⚡ LIVE STATS SYNC — timer complete → Supabase (leaderboard live হয়)
+  useEffect(() => {
+    initLiveStatsSync();
+  }, []);
+
+
     // 🔄 APP UPDATE DETECTOR (নতুন deploy হলে prompt)
   useEffect(() => {
     initAppUpdater((apply) => {
@@ -886,6 +914,10 @@ export function App() {
             onRefreshAppState={handleRefreshAppState}
             onAddToast={addToast}
           />
+        )}
+
+        {activePage === 'admin' && (
+          <AdminView profile={profile} />
         )}
 
         <OnboardingWizard

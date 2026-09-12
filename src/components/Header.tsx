@@ -10,7 +10,7 @@ import React, { memo } from 'react';
 import { UserProfile } from '../types';
 import { Bell, Wifi, WifiOff, Swords, RefreshCw } from 'lucide-react';
 import { LiveClock } from './LiveClock';
-import { ProfileAvatar } from './ProfileAvatar';
+import { UserAvatar } from './UserAvatar';
 import { PwaInstallHeaderButton } from './PwaInstall';
 
 interface HeaderProps {
@@ -225,7 +225,12 @@ export const Header: React.FC<HeaderProps> = memo(({
             aria-label={`Open profile for ${displayName}`}
             title={`Profile: ${displayName}`}
           >
-            <ProfileAvatar profile={profile} size={32} />
+            <UserAvatar
+              src={profile.photoURL || profile.avatar_url}
+              size={32}
+              crop={profile.avatarCrop}
+              rounded="full"
+            />
             <span className="hidden sm:inline text-xs font-bold truncate max-w-27.5 group-hover:text-gold transition-colors" title={displayName}>
               {displayName}
             </span>

@@ -38,6 +38,7 @@ import { supabase } from '../../supabaseClient';
 import { subscribeToPresence } from '../../supabaseChannels';
 import { applyDemoOverlay } from '../../utils/demoActivitySimulator';
 import { PeriodType, periodKeyFor } from '../../utils/periodKeys';
+import { DEFAULT_AVATARS } from '../../utils/defaultAvatars';
 
 // ============================================================================
 // DESIGN TOKENS (Dark Theme)
@@ -101,10 +102,11 @@ type Metric = 'xp' | 'study';
 // ============================================================================
 
 const getAvatarUrl = (name: string, customAvatar?: string | null): string => {
-  if (customAvatar && customAvatar.length > 5 && customAvatar.startsWith('http')) {
+  if (customAvatar && customAvatar.length > 5 && (customAvatar.startsWith('http') || customAvatar.startsWith('/avatars/'))) {
     return customAvatar;
   }
-  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name || 'Player')}&backgroundColor=171924`;
+  const seed = Array.from(name || 'Player').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return DEFAULT_AVATARS[seed % DEFAULT_AVATARS.length].url;
 };
 
 const formatStudyTime = (minutes: number): string => {

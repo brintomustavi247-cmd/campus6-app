@@ -25,6 +25,10 @@ export interface UserProfile {
   updatedAt: string;
   isDemo?: boolean;
   isOnboarded?: boolean;
+  isAdmin?: boolean;
+  useGooglePhoto?: boolean;
+  defaultAvatarId?: string;
+  avatarCrop?: { zoom: number; x: number; y: number };
 }
 
 export type SubjectCategory = 

@@ -1,7 +1,7 @@
 /**
- * CAMPUS 6.0 — Ayah Card Collection (gamified)
- * Rarity: common 🌿 / rare ⭐ / legendary 👑
+ * CAMPUS 6.0 — Ayah Card Collection (local + cloud sync)
  */
+import { supabase } from '../supabaseClient';
 
 export interface CollectedAyah {
   id: number;
@@ -27,5 +27,20 @@ export const claimAyah = (id: number): CollectedAyah | null => {
   list.push(item);
   localStorage.setItem(KEY, JSON.stringify(list));
   window.dispatchEvent(new CustomEvent('campus6:collection-changed'));
+
+  // ⭐ Cloud sync (fire & forget — admin panel-এ দেখাবে)
+  try {
+    supabase.auth.getUser().then(({ data }) => {
+      const uid = data.user?.id;
+      if (!uid) return;
+      supabase
+        .from('ayah_claims')
+        .upsert({ user_id: uid, ayah_id: id, rarity: item.rarity }, { onConflict: 'user_id,ayah_id' })
+        .then(({ error }) => {
+          if (error) console.warn('[Vault] cloud sync fail:', error.message);
+        });
+    });
+  } catch {}
+
   return item;
 };
