@@ -171,45 +171,51 @@ export const ExamCard: React.FC<ExamCardProps> = ({ examTopic, dateKey, onOpenEx
             </div>
           </div>
 
-          {/* ─── CTA row ─── */}
-          <div className="mt-4 flex items-center gap-2 flex-wrap">
+          {/* ─── CTA row (mobile: stacked, desktop: same clean layout) ─── */}
+          <div className="mt-4 flex flex-col gap-2">
+            {/* primary CTA — full width, single line */}
             {onOpenExamPrep && (
-             <button
-              onClick={() => {
-                feedbackUrgent();
-                window.open(examLink?.url || PH_EXAM_PORTAL, '_blank');
-              }}
-                className="flex-1 min-w-[140px] px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] bn"
+              <button
+                onClick={() => {
+                  feedbackUrgent();
+                  window.open(examLink?.url || PH_EXAM_PORTAL, '_blank');
+                }}
+                className="w-full px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 whitespace-nowrap transition-all hover:scale-[1.02] bn"
                 style={{
                   background: isLive ? 'linear-gradient(135deg,#EF4444,#DC2626)' : 'linear-gradient(135deg,#FBBF24,#D97706)',
                   boxShadow: isLive ? '0 4px 18px rgba(239,68,68,0.45)' : '0 4px 18px rgba(251,191,36,0.35)',
                   color: isLive ? '#fff' : '#0F111A',
                 }}
               >
-                      {isLive ? '🎯 এক্সাম দেই' : 'প্রস্তুতি নিন'}
-                <ArrowRight className="w-4 h-4" />
+                {isLive ? '🎯 এক্সাম দেই' : 'প্রস্তুতি নিন'}
+                <ArrowRight className="w-4 h-4 shrink-0" />
               </button>
             )}
-            {isLive && onDismiss && (
-              <button
-                onClick={onDismiss}
-                className="flex-1 min-w-[140px] px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] bn"
-                style={{
-                  background: 'linear-gradient(135deg,#10B981,#059669)',
-                  boxShadow: '0 4px 18px rgba(16,185,129,0.4)',
-                  color: '#fff',
-                }}
+
+            {/* secondary row — dismiss + MCQ chip */}
+            <div className="flex items-center gap-2">
+              {isLive && onDismiss && (
+                <button
+                  onClick={onDismiss}
+                  className="flex-1 px-3 py-2 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 whitespace-nowrap transition-all hover:scale-[1.02] bn"
+                  style={{
+                    background: 'linear-gradient(135deg,#10B981,#059669)',
+                    boxShadow: '0 3px 14px rgba(16,185,129,0.35)',
+                    color: '#fff',
+                  }}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  পরীক্ষা দিয়েছি
+                </button>
+              )}
+
+              <div
+                className={`${isLive && onDismiss ? 'flex-1' : 'w-full'} px-3 py-2 rounded-xl border text-[10px] font-bold flex items-center justify-center gap-1.5 whitespace-nowrap bn`}
+                style={{ borderColor: 'rgba(255,255,255,0.1)', color: '#94A3B8', background: 'rgba(255,255,255,0.03)' }}
               >
-                <CheckCircle2 className="w-4 h-4" />
-                পরীক্ষা দিয়েছি
-              </button>
-            )}
-            <div
-              className="px-3 py-2.5 rounded-xl border text-[10px] font-bold flex items-center gap-1.5 bn"
-              style={{ borderColor: 'rgba(255,255,255,0.1)', color: '#94A3B8', background: 'rgba(255,255,255,0.03)' }}
-            >
-              <Award className="w-3.5 h-3.5" style={{ color: isLive ? '#F87171' : '#FBBF24' }} />
-              MCQ · ৩৫ টি
+                <Award className="w-3.5 h-3.5 shrink-0" style={{ color: isLive ? '#F87171' : '#FBBF24' }} />
+                MCQ · ৩৫ টি
+              </div>
             </div>
           </div>
         </div>
