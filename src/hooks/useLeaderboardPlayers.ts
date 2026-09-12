@@ -5,7 +5,6 @@ import {
 } from '../services/leaderboardSync';
 import { useGlobalTimer } from '../contexts/TimerContext';
 import { EsportsPlayer } from '../components/squad/EsportsData';
-import { applyDemoOverlay } from '../utils/demoActivitySimulator';
 import { PeriodType, periodKeyFor } from '../utils/periodKeys';
 import { supabase } from '../supabaseClient';
 
@@ -94,7 +93,7 @@ export function useLeaderboardPlayers({
     };
   }, [currentUserId, limit]);
 
-  // ⭐ Merge: period override → demo overlay
+  // ⭐ Merge period stats over the canonical Supabase snapshot.
   const players = useMemo(() => {
     let list = basePlayers;
 
@@ -114,8 +113,7 @@ export function useLeaderboardPlayers({
       });
     }
 
-    // Demo/public players simulation (current user বাদে)
-    return applyDemoOverlay(list);
+    return list;
   }, [basePlayers, periodStats, period]);
 
   const value = useMemo(() => ({ players, ready }), [players, ready]);

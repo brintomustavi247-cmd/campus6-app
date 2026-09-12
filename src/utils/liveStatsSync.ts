@@ -27,6 +27,12 @@ export const initLiveStatsSync = () => {
   window.addEventListener('campus6:timer-completed', async (e: any) => {
     const s = e?.detail;
     if (!s?.durationMinutes) return;
+
+    // 2min Start Mode is a warm-up and must not affect study totals.
+    if (s.mode === '2min') {
+      console.log('[LiveStats] 2min start mode - skipped');
+      return;
+    }
     try {
       const { data } = await supabase.auth.getUser();
       const uid = data.user?.id;

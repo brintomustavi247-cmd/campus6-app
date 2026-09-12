@@ -49,6 +49,8 @@
 }
 
 :root {
+  color-scheme: dark;
+
   --color-bg: #0C0D12;
   --color-bg-elevated: #10121A;
   --color-surface: #181A23;
@@ -83,40 +85,6 @@
   --color-border-strong: rgba(255, 255, 255, 0.14);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --color-bg: #F7F8FC;
-    --color-bg-elevated: #FFFFFF;
-    --color-surface: #FFFFFF;
-    --color-surface-hover: #F8FAFC;
-    --color-surface-muted: #EEF2F7;
-    --color-nested: #F1F4F8;
-
-    --color-text-primary: #111827;
-    --color-text-secondary: #475569;
-    --color-text-muted: #64748B;
-    --color-text-disabled: #94A3B8;
-
-    --color-primary: #C91136;
-    --color-primary-hover: #DC143C;
-    --color-primary-deep: #900923;
-    --color-primary-soft: #FFE1E7;
-
-    --color-gold: #B7791F;
-    --color-gold-bright: #D97706;
-    --color-gold-soft: #FEF3C7;
-
-    --color-success: #15803D;
-    --color-success-soft: rgba(21, 128, 61, 0.12);
-
-    --color-focus: #0369A1;
-    --color-focus-soft: rgba(3, 105, 161, 0.12);
-
-    --color-danger: #BE123C;
-    --color-border: #E2E8F0;
-    --color-border-strong: #CBD5E1;
-  }
-}
 /* ⭐ Chrome Android font-boosting বন্ধ — mobile-এ text clip হবে না */
 html {
   -webkit-text-size-adjust: 100%;

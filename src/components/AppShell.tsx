@@ -45,6 +45,12 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [notifList, setNotifList] = useState<SmartNotification[]>([]);
   const [notifPermission, setNotifPermission] = useState<string>('default');
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
+  }, []);
+
   const refreshNotifs = useCallback(() => {
     setNotifList(getNotifications());
     setNotifPermission(getNotificationPermission());
