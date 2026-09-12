@@ -11,6 +11,7 @@
 import { PREMIUM_STUDY_TIPS, type StudyTip } from './dailyTips';
 import { getPhLink } from './phLink';
 import { feedbackNotif } from './alertFeedback';
+import { showAppNotification } from './appNotify';
 
 export interface NotificationPreferences {
   enabled: boolean;
@@ -68,21 +69,7 @@ const sendNotification = (title: string, body: string, icon: string = '/icons/ic
     // app foreground-এ থাকলে pop sound + vibrate
     if (document.visibilityState === 'visible') feedbackNotif();
 
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.ready
-        .then((reg) => reg.showNotification(title, {
-          body,
-          icon,
-          badge: icon,
-          tag: `campus6-${Date.now()}`,
-          requireInteraction: false,
-        }))
-        .catch(() => {
-          new Notification(title, { body, icon, badge: icon });
-        });
-    } else {
-      new Notification(title, { body, icon, badge: icon });
-    }
+    void showAppNotification(title, body);
   } catch (e) {
     console.warn('[Notif] send failed:', e);
   }

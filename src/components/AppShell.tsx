@@ -12,6 +12,7 @@ import { PageId, Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { ToastNotification } from './ToastNotification';
+import { showAppNotification } from '../utils/appNotify';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -64,11 +65,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         console.log('[Bell] 🔔 Permission result:', result);
         if (result === 'granted') {
           try {
-            new Notification('🔔 Notifications Enabled!', {
-              body: 'Timer complete হলে এখন phone vibrate + notification পাবেন।',
-              icon: '/icons/icon-192.png',
-              badge: '/icons/icon-192.png',
-            });
+            void showAppNotification('🔔 Notifications Enabled!', 'Timer complete হলে এখন phone vibrate + notification পাবেন।');
           } catch { /* noop */ }
         }
         refreshNotifs();

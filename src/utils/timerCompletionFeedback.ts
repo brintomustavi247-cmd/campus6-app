@@ -2,6 +2,7 @@
  * CAMPUS 6.0 — Timer Completion Feedback (Global)
  */
 import { feedbackSuccess } from './alertFeedback';
+import { showAppNotification } from './appNotify';
 let isInitialized = false;
 
 export const initTimerCompletionFeedback = () => {
@@ -66,16 +67,8 @@ export const initTimerCompletionFeedback = () => {
           return;
         }
 
-        const notif = new Notification(title, {
-          body,
-          icon: '/icons/icon-192.png',
-          badge: '/icons/icon-192.png',
-          tag: `campus6-timer-${Date.now()}`,
-          requireInteraction: false,
-        });
-
+        void showAppNotification(title, body);
         console.log('[TimerFeedback] ✅ Notification created:', title);
-        setTimeout(() => { try { notif.close(); } catch {} }, 6000);
       } catch (err) {
         console.error('[TimerFeedback] ❌ Notification error:', err);
       }

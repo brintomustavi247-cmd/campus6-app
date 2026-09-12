@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { seedDemoData, clearAllLocalData, flushPendingSyncs } from '../utils/storageEngine';
 import { ALL_ROUTINE_DATES } from '../data/routineData';
+import { showAppNotification } from '../utils/appNotify';
 
 interface DevTestPanelProps {
   onJumpToDate: (dateKey: string) => void;
@@ -49,9 +50,7 @@ export const DevTestPanel: React.FC<DevTestPanelProps> = ({
     if ('Notification' in window) {
       Notification.requestPermission().then(p => {
         if (p === 'granted') {
-          new Notification('Campus 6.0 Test Notification', {
-            body: 'নোটিফিকেশন ইঞ্জিন সঠিকভাবে কাজ করছে!'
-          });
+          void showAppNotification('Campus 6.0 Test Notification', 'নোটিফিকেশন ইঞ্জিন সঠিকভাবে কাজ করছে!');
           onAddToast('success', 'টেস্ট নোটিফিকেশন পাঠানো হয়েছে!');
         } else {
           onAddToast('error', 'নোটিফিকেশন পারমিশন মেলেনি!');

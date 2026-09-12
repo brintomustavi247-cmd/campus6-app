@@ -7,6 +7,7 @@
 
 import { getRoutineForDate } from '../data/routineData';
 import { getClassWindow, getExamWindow } from './classExamWindow';
+import { showAppNotification } from './appNotify';
 
 export interface SmartNotification {
   id: string;
@@ -153,34 +154,13 @@ export const getNotificationPermission = (): string => {
 };
 
 // ─── ⭐ Send via Service Worker (phone tray-তে দেখায়, tab background-এ থাকলেও) ───
-const fallbackNotification = (title: string, opts: NotificationOptions) => {
-  try {
-    const n = new Notification(title, opts);
-    setTimeout(() => n.close(), 8000);
-  } catch { /* ignore */ }
-};
-
-export const sendBrowserNotification = (title: string, body: string, icon?: string) => {
+// ─── ⭐ Send via Service Worker (phone tray-তে দেখায়, tab background-এ থাকলেও) ───
+export const sendBrowserNotification = (title: string, body: string, _icon?: string) => {
   if (typeof window === 'undefined') return;
   if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
     window.dispatchEvent(new CustomEvent('campus6:premium-notif', { detail: { title, body } }));
     return;
   }
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-
-  const opts: NotificationOptions & { vibrate?: number[] } = {
-    body,
-    icon: icon || '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
-    tag: 'campus6-' + title,
-    vibrate: [200, 100, 200],
-  };
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready
-      .then((reg) => reg.showNotification(title, opts))
-      .catch(() => fallbackNotification(title, opts));
-  } else {
-    fallbackNotification(title, opts);
-  }
+  void showAppNotification(title, body);
 };

@@ -1,3 +1,4 @@
+import { showAppNotification } from './appNotify';
 /**
  * CAMPUS 6.0 — Class/Exam Reminder Engine
  * 
@@ -55,8 +56,7 @@ function sendBrowserNotification(title: string, body: string) {
   try {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     if (Notification.permission === 'granted') {
-      const n = new Notification(title, { body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' });
-      setTimeout(() => n.close(), 8000);
+      void showAppNotification(title, body);
     }
   } catch (err) {
     console.warn('[Reminders] Browser notification failed:', err);
