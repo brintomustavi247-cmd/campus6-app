@@ -4,6 +4,7 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PageId } from '../components/Sidebar';
 import { clearAllLocalData, seedDemoData, flushPendingSyncs } from '../utils/storageEngine';
 import { NotificationSettings } from '../components/NotificationSettings';
+import { PwaStatusCard } from '../components/PwaStatusCard';
 import { AyahCollectionCard } from '../components/AyahCollectionCard';
 import { 
   Settings, 
@@ -287,6 +288,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
         </div>
       </div>
+      {/* ⭐ Daily Study Notifications */}
+      <NotificationSettings />      {/* ⭐ PWA Install Status */}
+      <PwaStatusCard />
+
       {/* ⭐ Daily Study Notifications */}
       <NotificationSettings />
 

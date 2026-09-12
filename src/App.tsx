@@ -37,7 +37,7 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense, useMemo, useRef } from 'react';
 import {
   UserProfile,
   DailyProgress,
@@ -76,6 +76,9 @@ import { startScheduler, stopScheduler } from './utils/studyNotifications';
 import { getUnreadCount, generateSmartNotifications, saveNotification, requestNotificationPermission, sendBrowserNotification } from './utils/smartNotifications';
 import { useClassExamReminders } from './utils/useClassExamReminders';
 import { initTimerCompletionFeedback } from './utils/timerCompletionFeedback';
+import { NotificationOnboarding } from './components/NotificationOnboarding';
+import { initAppUpdater } from './utils/appUpdater';
+import { UpdateBanner } from './components/UpdateBanner';
 import { unlockAudio } from './utils/alertFeedback';
 
 // ============================================================================
@@ -229,6 +232,8 @@ export function App() {
 
   // Auth loading state (prevents race condition)
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+    const [showUpdate, setShowUpdate] = useState<boolean>(false);
+  const applyUpdateRef = useRef<() => void>(() => {});
 
   // ========================================================================
   // MEMOIZED VALUES
@@ -702,6 +707,13 @@ export function App() {
     window.addEventListener('pointerdown', un, { once: true });
     return () => window.removeEventListener('pointerdown', un);
   }, []);
+    // 🔄 APP UPDATE DETECTOR (নতুন deploy হলে prompt)
+  useEffect(() => {
+    initAppUpdater((apply) => {
+      applyUpdateRef.current = apply;
+      setShowUpdate(true);
+    });
+  }, []);
 
   // ========================================================================
   // AUTH CALLBACK ROUTE (must precede all gates)
@@ -899,6 +911,14 @@ export function App() {
 
     {/* 📲 PWA Install Popup — themed (login page-এর মতো dark+red+gold) */}
     <PwaInstallModal onAddToast={addToast} />
+        {/* 🔔 Notification Onboarding — এক tap-এ permission */}
+    <NotificationOnboarding />
+            {/* 🔄 App Update Banner */}
+        <UpdateBanner
+          show={showUpdate}
+          onUpdate={() => { setShowUpdate(false); applyUpdateRef.current(); }}
+          onDismiss={() => setShowUpdate(false)}
+        />
     </>
   );
 }

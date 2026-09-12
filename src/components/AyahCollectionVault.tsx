@@ -63,7 +63,7 @@ const VaultCard: React.FC<{ c: CollectedAyah; i: number }> = ({ c, i }) => {
 
   return (
     <div
-      className="vault-enter vault-float group mx-auto w-full max-w-[340px]"
+      className="vault-enter vault-float group mx-auto w-full max-w-85"
       style={{ animationDelay: `${i * 0.07}s, ${1 + i * 0.4}s` }}
     >
       <div
@@ -133,7 +133,7 @@ const VaultCard: React.FC<{ c: CollectedAyah; i: number }> = ({ c, i }) => {
         <div className="relative flex-1 flex flex-col items-center justify-center py-2">
           <p
             dir="rtl"
-            className="text-center leading-[2] px-2"
+            className="text-center leading-loose px-2"
             style={{
               fontFamily: "'Amiri', serif",
               color: '#F8FAFC',
@@ -199,7 +199,7 @@ const VaultCard: React.FC<{ c: CollectedAyah; i: number }> = ({ c, i }) => {
 
 /* ─── Locked Slot (mysterious) ─── */
 const LockedCard: React.FC<{ id: number; i: number }> = ({ id, i }) => (
-  <div className="vault-enter mx-auto w-full max-w-[340px]" style={{ animationDelay: `${i * 0.05}s` }}>
+  <div className="vault-enter mx-auto w-full max-w-85" style={{ animationDelay: `${i * 0.05}s` }}>
     <div
       className="relative overflow-hidden rounded-[22px] p-4 flex flex-col items-center justify-center gap-3"
       style={{
@@ -242,7 +242,7 @@ export const AyahCollectionVault: React.FC<{ open: boolean; onClose: () => void 
 
   return (
     <div
-      className="fixed inset-0 z-[70] overflow-y-auto"
+      className="fixed inset-0 z-70 overflow-y-auto"
       style={{
         background:
           'radial-gradient(1200px 600px at 50% -10%, rgba(251,191,36,0.08), transparent 60%), radial-gradient(900px 500px at 85% 110%, rgba(168,85,247,0.06), transparent 60%), radial-gradient(700px 400px at 10% 50%, rgba(16,185,129,0.05), transparent 60%), linear-gradient(180deg,#070910 0%,#0B0D14 100%)',
