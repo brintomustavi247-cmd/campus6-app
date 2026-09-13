@@ -9,3 +9,9 @@ coverage/
 
 .vercel
 .env*.local
+
+# Android signing secrets — never commit these
+signing.keystore
+signing-key-info.txt
+*.keystore
+*.jks
