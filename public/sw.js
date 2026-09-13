@@ -1,4 +1,5 @@
-const CACHE = 'campus6-sw-v3';
+// ⭐ HARD RESET: v3 -> v4 (force old phones to drop stale caches)
+const CACHE = 'campus6-sw-v4';
 const CORE = ['/', '/index.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
