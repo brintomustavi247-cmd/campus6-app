@@ -1659,3 +1659,58 @@ button {
 .ayah-medallion {
   animation: medallionPulse 4s ease-in-out infinite;
 }
+
+/* ============================================================
+   PREMIUM BANGLA TYPOGRAPHY + PERFORMANCE MODE
+   ============================================================ */
+:root{
+  --font-bn-display:'Noto Serif Bengali','Tiro Bangla',serif;
+  --font-bn-ui:'Hind Siliguri','Anek Bangla',sans-serif;
+}
+
+body{ font-family:var(--font-bn-ui),system-ui,-apple-system,sans-serif; }
+
+/* সব Bangla UI text → clean premium sans */
+.bn,
+[style*="Anek Bangla"]{
+  font-family:var(--font-bn-ui) !important;
+}
+
+/* Headings → editorial premium serif */
+h1.bn, h2.bn, h3.bn, h4.bn,
+h1[style*="Anek Bangla"], h2[style*="Anek Bangla"],
+h3[style*="Anek Bangla"], h4[style*="Anek Bangla"]{
+  font-family:var(--font-bn-display) !important;
+  font-weight:700;
+  letter-spacing:-0.015em;
+}
+
+/* Numbers → tabular mono (jump করবে না) */
+.font-mono, [style*="JetBrains Mono"]{ font-variant-numeric:tabular-nums; }
+
+/* ---------- PERFORMANCE ---------- */
+/* Offscreen sections paint skip করে — scroll-এর আগে render হয় না */
+section, article{
+  content-visibility:auto;
+  contain-intrinsic-size:auto 480px;
+}
+
+/* ⭐ LOW-END DEVICE MODE (perfMode.ts সেট করে) */
+html[data-perf="lite"] *,
+html[data-perf="lite"] *::before,
+html[data-perf="lite"] *::after{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  animation:none !important;
+  transition-duration:.12s !important;
+}
+html[data-perf="lite"] [style*="blur("],
+html[data-perf="lite"] [style*="filter"]{ filter:none !important; }
+html[data-perf="lite"] [style*="box-shadow"]{ box-shadow:none !important; }
+html[data-perf="lite"] .routine-wrap::before,
+html[data-perf="lite"] .exam-wrap::before{ display:none !important; }
+
+/* User preference respect */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation:none !important; transition:none !important; }
+}

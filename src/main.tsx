@@ -5,6 +5,7 @@ import './index.css';
 import { PresenceProvider } from './contexts/PresenceContext';
 import { TimerProvider } from './contexts/TimerContext';
 import { supabase } from './supabaseClient';
+import { applyPerfMode } from './utils/perfMode';
 
 // DEBUG: exposes Supabase client in the browser console so we can run
 // one-liner diagnostics even in the production build.
@@ -12,6 +13,10 @@ import { supabase } from './supabaseClient';
 (window as any).supabase = supabase;
 
 console.log('[CAMPUS] ✅ engine v11 deployed — timer writes ACTIVE');
+
+// ⚡ Low-end device detector — lite mode (blur/animation off) before first paint
+applyPerfMode();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <PresenceProvider>

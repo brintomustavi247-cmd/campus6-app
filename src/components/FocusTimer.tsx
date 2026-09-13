@@ -3,6 +3,7 @@ import { Play, Pause, RotateCcw, Volume2, VolumeX, Bell, Clock, Infinity, Zap } 
 import { TimerSession, SubjectCategory } from '../types';
 import { useGlobalTimer } from '../contexts/TimerContext';
 import { TopicPickerModal } from './TopicPickerModal';
+import { FocusLockUI } from './FocusLockUI';
 import { getTopicPickerMode } from '../data/hscSyllabus';
 
 interface FocusTimerProps {
@@ -546,6 +547,11 @@ export const FocusTimer: React.FC<FocusTimerProps> = ({
             <RotateCcw className="w-5 h-5" />
           </button>
         </div>
+      </div>
+
+      {/* 🔒 Focus Lock (YPT-style) */}
+      <div className="mt-4">
+        <FocusLockUI />
       </div>
 
       <TopicPickerModal
