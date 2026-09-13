@@ -33,6 +33,36 @@
       "purpose": "maskable"
     }
   ],
+  "screenshots": [
+    {
+      "src": "/landing/shots/1.jpg",
+      "sizes": "1080x2400",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "CAMPUS 6.0 — Dashboard"
+    },
+    {
+      "src": "/landing/shots/2.jpg",
+      "sizes": "1080x2400",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "CAMPUS 6.0 — Focus Timer"
+    },
+    {
+      "src": "/landing/shots/3.jpg",
+      "sizes": "1080x2400",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "CAMPUS 6.0 — Leaderboard"
+    },
+    {
+      "src": "/landing/shots/4.jpg",
+      "sizes": "1080x2400",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "CAMPUS 6.0 — Ayah Vault"
+    }
+  ],
   "launch_handler": {
     "client_mode": "focus-existing"
   }
