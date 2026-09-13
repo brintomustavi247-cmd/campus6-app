@@ -1714,3 +1714,15 @@ html[data-perf="lite"] .exam-wrap::before{ display:none !important; }
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after{ animation:none !important; transition:none !important; }
 }
+
+/* ============================================================
+   INSTALLED APP (TWA/PWA) = PERFORMANCE MODE (FIX 3b)
+   Browser-এ খুললে full mode (effects অক্ষত); installed app-এ blur off
+   ============================================================ */
+@media (display-mode: standalone){
+  *,*::before,*::after{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  .routine-wrap::before,.exam-wrap::before{animation:none !important}
+}

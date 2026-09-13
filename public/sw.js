@@ -1,4 +1,4 @@
-const CACHE = 'campus6-v1';
+const CACHE = 'campus6-sw-v3';
 const CORE = ['/', '/index.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
