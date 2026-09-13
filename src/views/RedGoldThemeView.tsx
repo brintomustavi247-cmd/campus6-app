@@ -265,7 +265,7 @@ export const RedGoldThemeView: React.FC<RedGoldThemeViewProps> = ({
                           {isMe && <span className="text-[8px] font-mono bg-[#C41E3A] text-white px-1.5 py-0.5 rounded">YOU</span>}
                           {p.isOnline && <span className="w-1.5 h-1.5 rounded-full bg-[#34D399]" />}
                         </h5>
-                        <p className="text-[10px] text-[#A89A92] truncate max-w-[140px]">{p.target || 'HUNTER'}</p>
+                        <p className="text-[10px] text-[#A89A92] truncate max-w-35">{p.target || 'HUNTER'}</p>
                       </div>
                     </div>
 
