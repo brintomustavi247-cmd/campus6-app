@@ -1,54 +1,45 @@
 import React from 'react';
-import { Flame, Trophy, Award, Info } from 'lucide-react';
-import { StreakResult } from '../utils/storageEngine';
+import { Flame } from 'lucide-react';
 
-interface StreakCardProps {
-  streak: StreakResult;
-}
+const PANEL: React.CSSProperties = {
+  background: 'rgba(13,16,22,0.7)',
+  border: '1px solid rgba(255,255,255,0.06)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+  borderRadius: 16,
+};
 
-export const StreakCard: React.FC<StreakCardProps> = ({ streak }) => {
+const MICRO: React.CSSProperties = {
+  fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase',
+  color: '#475569', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+};
+
+export const StreakCard: React.FC<{ streak: any }> = ({ streak }) => {
+  const s: any = streak || {};
+  const current = s.count ?? s.current ?? s.days ?? s.streak ?? 0;
+  const best = s.best ?? s.longest ?? s.max ?? current;
+  const success = s.successDays ?? s.seventyPlus ?? s.goodDays ?? s.totalSuccess ?? 0;
+
+  const cells = [
+    { label: 'চলমান', value: current, color: '#F97316' },
+    { label: 'সেরা', value: best, color: '#FBBF24' },
+    { label: '৭০%+ দিন', value: success, color: '#34D399' },
+  ];
+
   return (
-    <div className="p-4 rounded-2xl bg-surface-muted border border-border border border-amber-600/40 shadow-lg text-text-primary relative overflow-hidden">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
-            <Flame className="w-5 h-5 animate-pulse" />
-          </div>
-          <div>
-            <h3 className="text-xs font-bold text-amber-300">
-              স্ট্রিক ট্র্যাকার (Streak)
-            </h3>
-            <p className="text-[10px] text-text-muted">প্রতিদিন ৭০% লক্ষ্য পূরণে স্ট্রিক বাড়ে</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1 text-[10px] text-amber-300/80 px-2 py-1 rounded-lg bg-amber-950/80 border border-amber-800/40" title="স্ট্রিক নিয়ম: ৭০% কাজ শেষ করলে একদিনের স্ট্রিক গণনা করা হয়">
-          <Info className="w-3 h-3 text-gold" />
-          <span>৭০% রুল</span>
-        </div>
+    <div className="p-5" style={PANEL}>
+      <div className="flex items-center justify-between mb-4">
+        <p style={MICRO}>Streak Tracker</p>
+        <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.3)' }}>
+          <Flame className="w-3.5 h-3.5" style={{ color: '#F97316' }} />
+        </span>
       </div>
-
-      <div className="grid grid-cols-3 gap-3 text-center mt-2">
-        <div className="p-2.5 rounded-xl bg-surface-muted border border-border">
-          <p className="text-[10px] text-text-muted  font-semibold">চলতি স্ট্রিক</p>
-          <p className="text-2xl font-black text-amber-400 font-mono mt-0.5">
-            {streak.currentStreak} <span className="text-xs font-normal text-text-secondary">দিন</span>
-          </p>
-        </div>
-
-        <div className="p-2.5 rounded-xl bg-surface-muted border border-border">
-          <p className="text-[10px] text-text-muted  font-semibold">সেরা স্ট্রিক</p>
-          <p className="text-2xl font-black text-gold font-mono mt-0.5">
-            {streak.bestStreak} <span className="text-xs font-normal text-text-secondary">দিন</span>
-          </p>
-        </div>
-
-        <div className="p-2.5 rounded-xl bg-surface-muted border border-border">
-          <p className="text-[10px] text-text-muted  font-semibold">৭০%+ সফল দিন</p>
-          <p className="text-2xl font-black text-text-muted font-mono mt-0.5">
-            {streak.daysAbove70Count}
-          </p>
-        </div>
+      <div className="grid grid-cols-3 gap-2">
+        {cells.map((c, i) => (
+          <div key={c.label} className="text-center py-2" style={i > 0 ? { borderLeft: '1px solid rgba(255,255,255,0.06)' } : undefined}>
+            <p className="text-xl font-black font-mono tabular-nums leading-none" style={{ color: c.color }}>{c.value}</p>
+            <p className="text-[9px] bn mt-1.5" style={{ color: '#475569' }}>{c.label}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

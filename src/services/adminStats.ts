@@ -49,9 +49,9 @@ export const fetchAdminOverview = async (): Promise<AdminOverview> => {
     .sort((a, b) => b.claims - a.claims)
     .slice(0, 10);
 
-  const { data: statRows } = await supabase.from('users').select('study_minutes, last_active');
+  const { data: statRows } = await supabase.from('users').select('total_study_time, last_active');
   (statRows || []).forEach((s: any) => {
-    out.totalStudyMinutes += s.study_minutes || 0;
+    out.totalStudyMinutes += s.total_study_time || 0;
     if (s.last_active && new Date(s.last_active).getTime() >= todayStart.getTime()) out.activeToday += 1;
   });
 
@@ -71,7 +71,7 @@ export interface AdminUser {
 
 export const fetchAdminUsers = async (): Promise<AdminUser[]> => {
   const [{ data: users }, { data: claims }] = await Promise.all([
-    supabase.from('users').select('id, full_name, email, avatar_url, created_at, last_active, study_minutes, is_admin'),
+    supabase.from('users').select('id, full_name, email, avatar_url, created_at, last_active, total_study_time, is_admin'),
     supabase.from('ayah_claims').select('user_id'),
   ]);
 
@@ -86,7 +86,7 @@ export const fetchAdminUsers = async (): Promise<AdminUser[]> => {
       avatar: u.avatar_url || '',
       createdAt: u.created_at,
       lastActive: u.last_active || null,
-      studyMinutes: u.study_minutes || 0,
+      studyMinutes: u.total_study_time || 0,
       claims: cmap[u.id] || 0,
       isAdmin: !!u.is_admin,
     }))

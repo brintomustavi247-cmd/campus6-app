@@ -4,12 +4,7 @@ import { getRoutineForDate } from '../data/routineData';
 import { DateSelector } from '../components/DateSelector';
 import { DailyRoutineCard } from '../components/DailyRoutineCard';
 import { ExamCard } from '../components/ExamCard';
-import { 
-  Plus, 
-  Trash2, 
-  FileText,
-  Target
-} from 'lucide-react';
+import { Plus, Trash2, FileText, Target } from 'lucide-react';
 
 interface DailyPlanViewProps {
   profile: UserProfile;
@@ -22,36 +17,34 @@ interface DailyPlanViewProps {
   onAddToast: (type: 'success' | 'info' | 'warning' | 'error', message: string) => void;
 }
 
-// 🎨 Rotating color palette for tasks
-const TASK_COLORS = [
-  { bar: '#DC143C', glow: 'rgba(220,20,60,0.35)' },
-  { bar: '#FBBF24', glow: 'rgba(251,191,36,0.35)' },
-  { bar: '#35D6FF', glow: 'rgba(53,214,255,0.35)' },
-  { bar: '#8B5CF6', glow: 'rgba(139,92,246,0.35)' },
-  { bar: '#10B981', glow: 'rgba(16,185,129,0.35)' },
-  { bar: '#F97316', glow: 'rgba(249,115,22,0.35)' },
-];
+const TASK_COLORS = ['#DC143C', '#FBBF24', '#35D6FF', '#8B5CF6', '#10B981', '#F97316'];
+
+const PANEL: React.CSSProperties = {
+  background: 'rgba(18,22,30,0.9)',
+  border: '1px solid rgba(255,255,255,0.11)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07), 0 10px 30px rgba(0,0,0,0.35)',
+  borderRadius: 16,
+};
+
+const MICRO: React.CSSProperties = {
+  fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase',
+  color: '#475569', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+};
+
+const INPUT = 'px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs text-slate-100 focus:outline-none focus:border-[#FBBF24] transition-colors';
 
 export const DailyPlanView: React.FC<DailyPlanViewProps> = ({
-  profile,
-  selectedDateKey,
-  onDateChange,
-  todayKey,
-  dailyProgress,
-  onUpdateProgress,
-  onAddToast
+  selectedDateKey, onDateChange, todayKey, dailyProgress, onUpdateProgress, onAddToast,
 }) => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskMinutes, setNewTaskMinutes] = useState(30);
   const routine = getRoutineForDate(selectedDateKey);
 
-  // Add Custom Task
   const handleAddTask = () => {
     if (!newTaskTitle.trim()) {
       onAddToast('warning', 'Task title cannot be empty');
       return;
     }
-
     const newTask: CustomTask = {
       id: `task_${Date.now()}`,
       dateKey: selectedDateKey,
@@ -59,213 +52,132 @@ export const DailyPlanView: React.FC<DailyPlanViewProps> = ({
       subject: 'Other',
       priority: 'Medium',
       estimatedMinutes: newTaskMinutes,
-      completed: false
+      completed: false,
     };
-
-    onUpdateProgress({
-      ...dailyProgress,
-      customTasks: [...(dailyProgress.customTasks || []), newTask]
-    });
-
+    onUpdateProgress({ ...dailyProgress, customTasks: [...(dailyProgress.customTasks || []), newTask] });
     setNewTaskTitle('');
     setNewTaskMinutes(30);
     onAddToast('success', 'Task added successfully');
   };
 
-  // Toggle Custom Task
   const handleToggleTask = (taskId: string) => {
-    const updatedTasks = (dailyProgress.customTasks || []).map(t => {
-      if (t.id === taskId) {
-        return {
-          ...t,
-          completed: !t.completed,
-          completedAt: !t.completed ? new Date().toISOString() : undefined
-        };
-      }
-      return t;
-    });
-    onUpdateProgress({
-      ...dailyProgress,
-      customTasks: updatedTasks
-    });
+    const updatedTasks = (dailyProgress.customTasks || []).map((t) =>
+      t.id === taskId ? { ...t, completed: !t.completed, completedAt: !t.completed ? new Date().toISOString() : undefined } : t
+    );
+    onUpdateProgress({ ...dailyProgress, customTasks: updatedTasks });
   };
 
-  // Delete Custom Task
   const handleDeleteTask = (taskId: string) => {
-    const updatedTasks = (dailyProgress.customTasks || []).filter(t => t.id !== taskId);
-    onUpdateProgress({
-      ...dailyProgress,
-      customTasks: updatedTasks
-    });
+    onUpdateProgress({ ...dailyProgress, customTasks: (dailyProgress.customTasks || []).filter((t) => t.id !== taskId) });
   };
 
-  // Handle Notes Autosave
   const handleNotesChange = (text: string) => {
-    onUpdateProgress({
-      ...dailyProgress,
-      notes: text
-    });
+    onUpdateProgress({ ...dailyProgress, notes: text });
   };
 
-  const todayTasks = (dailyProgress.customTasks || []).filter(t => t.dateKey === selectedDateKey);
-  const completedTasks = todayTasks.filter(t => t.completed).length;
+  const todayTasks = (dailyProgress.customTasks || []).filter((t) => t.dateKey === selectedDateKey);
+  const completedTasks = todayTasks.filter((t) => t.completed).length;
   const totalTasks = todayTasks.length;
+  const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="space-y-6 pb-16 animate-in fade-in">
-      {/* Date Picker Header */}
-      <DateSelector
-        selectedDateKey={selectedDateKey}
-        onDateChange={onDateChange}
-        todayKey={todayKey}
-      />
+    <div className="space-y-5 pb-16 animate-in fade-in">
+      {/* date selector */}
+      <DateSelector selectedDateKey={selectedDateKey} onDateChange={onDateChange} todayKey={todayKey} />
 
-      {/* Progress Summary Card */}
-      <div className="p-5 rounded-2xl bg-surface border border-border shadow-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Target className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-text-primary">Today's Focus</h2>
-              <p className="text-xs text-text-muted mt-0.5">
-                {totalTasks === 0 
-                  ? 'No tasks yet. Add one below.' 
-                  : `${completedTasks} of ${totalTasks} tasks completed`}
-              </p>
-            </div>
+      {/* ═══ progress summary ═══ */}
+      <div className="p-5" style={PANEL}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Target className="w-3.5 h-3.5" style={{ color: '#FBBF24' }} />
+            <p style={{ ...MICRO, color: '#94A3B8' }}>Today's Focus</p>
           </div>
-          {totalTasks > 0 && (
-            <div className="text-right">
-              <div className="text-2xl font-black text-primary">
-                {Math.round((completedTasks / totalTasks) * 100)}%
-              </div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wide">Progress</div>
-            </div>
-          )}
+          <span className="text-lg font-black font-mono tabular-nums" style={{ color: pct >= 70 ? '#34D399' : '#F8FAFC' }}>
+            {pct}%
+          </span>
         </div>
-      </div>
 
-      {/* Routine & Exam Cards */}
-      <div className="space-y-4">
-        <DailyRoutineCard 
-          routine={routine} 
-          dateKey={selectedDateKey} 
-        />
-        
-        {routine.examTopic && (
-          <ExamCard 
-            examTopic={routine.examTopic} 
-            dateKey={selectedDateKey} 
+        <div className="h-1 rounded-full overflow-hidden mb-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${pct}%`, background: 'linear-gradient(90deg,#DC143C,#FBBF24)', boxShadow: '0 0 8px rgba(251,191,36,0.35)' }}
           />
-        )}
+        </div>
+
+        <p className="text-[10px] bn" style={{ color: '#475569' }}>
+          {totalTasks === 0 ? 'এখনো কোনো task নেই — নিচে যোগ করুন' : `${totalTasks} টির মধ্যে ${completedTasks} টি সম্পন্ন`}
+        </p>
       </div>
 
-      {/* ─── Personal Tasks — Colorful Edition ─── */}
-      <div className="p-5 rounded-2xl bg-surface border border-border shadow-lg space-y-4 relative overflow-hidden">
-        {/* 🌈 Rainbow top accent */}
-        <div
-          className="absolute top-0 left-0 right-0 h-0.75"
-          style={{ background: 'linear-gradient(90deg, #DC143C, #FBBF24, #10B981, #35D6FF, #8B5CF6)' }}
-        />
+      {/* routine + exam */}
+      <div className="space-y-4">
+        <DailyRoutineCard routine={routine} dateKey={selectedDateKey} />
+        {routine.examTopic && <ExamCard examTopic={routine.examTopic} dateKey={selectedDateKey} />}
+      </div>
 
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
-            <Target className="w-4 h-4 text-primary" />
-            Personal Tasks
-          </h3>
+      {/* ═══ personal tasks ═══ */}
+      <div className="overflow-hidden" style={PANEL}>
+        <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <p style={MICRO}>Personal Tasks</p>
           {totalTasks > 0 && (
-            <span
-              className="text-xs font-mono font-bold px-2.5 py-1 rounded-full text-white"
-              style={{ background: 'linear-gradient(135deg, #DC143C, #8B5CF6)', boxShadow: '0 2px 10px rgba(139,92,246,0.35)' }}
-            >
+            <span className="text-[9px] font-black font-mono px-2 py-0.5 rounded" style={{ background: 'rgba(251,191,36,0.1)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.25)' }}>
               {completedTasks}/{totalTasks}
             </span>
           )}
         </div>
 
-        {/* 🌈 Colorful progress bar */}
-        {totalTasks > 0 && (
-          <div className="w-full h-2 rounded-full bg-surface-muted border border-border overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${Math.round((completedTasks / totalTasks) * 100)}%`,
-                background: 'linear-gradient(90deg, #DC143C, #FBBF24, #10B981)',
-                boxShadow: '0 0 10px rgba(251,191,36,0.4)',
-              }}
+        <div className="p-5 space-y-4">
+          {/* add form */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
+              placeholder="নতুন task লিখুন..."
+              className={`flex-1 min-w-0 bn ${INPUT}`}
             />
+            <input
+              type="number"
+              value={newTaskMinutes}
+              onChange={(e) => setNewTaskMinutes(Number(e.target.value))}
+              min={5}
+              max={240}
+              className={`w-16 text-center font-mono ${INPUT}`}
+            />
+            <button
+              onClick={handleAddTask}
+              className="px-4 rounded-xl flex items-center justify-center transition-all hover:brightness-110 active:scale-95 shrink-0"
+              style={{ background: 'linear-gradient(135deg,#FBBF24,#D97706)', color: '#0F111A', boxShadow: '0 4px 14px rgba(251,191,36,0.3)' }}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
-        )}
 
-        {/* Add Task Form */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newTaskTitle}
-            onChange={e => setNewTaskTitle(e.target.value)}
-            onKeyPress={e => e.key === 'Enter' && handleAddTask()}
-            placeholder="Add a new task..."
-            className="flex-1 px-4 py-2.5 rounded-xl bg-surface-muted border border-border text-text-primary text-sm focus:outline-none focus:border-primary transition-colors"
-          />
-          <input
-            type="number"
-            value={newTaskMinutes}
-            onChange={e => setNewTaskMinutes(Number(e.target.value))}
-            placeholder="Min"
-            min="5"
-            max="240"
-            className="w-20 px-3 py-2.5 rounded-xl bg-surface-muted border border-border text-text-primary text-sm text-center focus:outline-none focus:border-primary transition-colors"
-          />
-          <button
-            onClick={handleAddTask}
-            className="px-4 py-2.5 rounded-xl text-white font-bold transition-all flex items-center gap-1.5 min-w-11 justify-center hover:scale-105"
-            style={{ background: 'linear-gradient(135deg, #DC143C, #9E0E29)', boxShadow: '0 4px 14px rgba(220,20,60,0.35)' }}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
+          {/* task rows */}
+          {todayTasks.length === 0 ? (
+            <p className="text-[11px] bn py-6 text-center" style={{ color: '#334155' }}>
+              কোনো task নেই — উপরে যোগ করুন ✨
+            </p>
+          ) : (
+            <div>
+              {todayTasks.map((task, idx) => {
+                const color = TASK_COLORS[idx % TASK_COLORS.length];
+                return (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-3 py-3 relative"
+                    style={{ borderBottom: idx !== todayTasks.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                  >
+                    <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full" style={{ background: task.completed ? '#10B981' : color }} />
 
-        {/* Task List — colorful rows + SQUARE tick box */}
-        {todayTasks.length > 0 && (
-          <div className="space-y-2">
-            {todayTasks.map((task, idx) => {
-              const color = TASK_COLORS[idx % TASK_COLORS.length];
-              return (
-                <div
-                  key={task.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-xl border transition-all relative overflow-hidden"
-                  style={{
-                    background: task.completed ? 'rgba(16,185,129,0.06)' : 'var(--color-surface-muted, #151721)',
-                    borderColor: task.completed ? 'rgba(16,185,129,0.35)' : 'var(--color-border, rgba(255,255,255,0.07))',
-                  }}
-                >
-                  {/* ⭐ Left color bar */}
-                  <span
-                    className="absolute left-0 top-0 bottom-0 w-1"
-                    style={{
-                      background: task.completed ? '#10B981' : color.bar,
-                      boxShadow: `0 0 8px ${task.completed ? 'rgba(16,185,129,0.5)' : color.glow}`,
-                    }}
-                  />
-
-                  <div className="flex items-center gap-3 flex-1 min-w-0 pl-2">
-                    {/* ⭐ SQUARE tick box (rounded-md, not rounded-full) */}
                     <button
                       onClick={() => handleToggleTask(task.id)}
-                      className="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0"
+                      className="w-5 h-5 rounded-md flex items-center justify-center transition-all shrink-0 ml-2"
                       style={
                         task.completed
-                          ? {
-                              background: 'linear-gradient(135deg, #10B981, #059669)',
-                              borderColor: '#10B981',
-                              boxShadow: '0 0 10px rgba(16,185,129,0.45)',
-                            }
-                          : {
-                              background: 'var(--color-surface, #181A23)',
-                              borderColor: color.bar,
-                            }
+                          ? { background: 'linear-gradient(135deg,#10B981,#059669)', border: '1px solid #10B981', boxShadow: '0 0 10px rgba(16,185,129,0.4)' }
+                          : { background: 'rgba(255,255,255,0.03)', border: `1px solid ${color}60` }
                       }
                     >
                       {task.completed && (
@@ -276,48 +188,43 @@ export const DailyPlanView: React.FC<DailyPlanViewProps> = ({
                     </button>
 
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${task.completed ? 'line-through text-text-muted' : 'text-text-primary'}`}>
+                      <p className={`text-[12px] font-semibold bn truncate ${task.completed ? 'line-through' : ''}`} style={{ color: task.completed ? '#475569' : '#E2E8F0' }}>
                         {task.title}
                       </p>
-                      <p className="text-[10px] mt-0.5 font-bold" style={{ color: task.completed ? '#10B981' : color.bar }}>
+                      <p className="text-[9px] font-mono mt-0.5" style={{ color: task.completed ? '#10B981' : color }}>
                         ⏱ {task.estimatedMinutes} min
                       </p>
                     </div>
+
+                    <button
+                      onClick={() => handleDeleteTask(task.id)}
+                      className="p-2 rounded-lg transition-colors hover:bg-white/5 shrink-0"
+                      style={{ color: '#475569' }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-
-                  <button
-                    onClick={() => handleDeleteTask(task.id)}
-                    className="p-2 rounded-lg text-text-muted hover:bg-danger/10 hover:text-danger transition-colors shrink-0"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {todayTasks.length === 0 && (
-          <div className="py-8 text-center text-text-muted text-sm">
-            No tasks yet. Add one above to get started. ✨
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Daily Notes */}
-      <div className="p-5 rounded-2xl bg-surface border border-border shadow-lg space-y-3">
-        <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
-          <FileText className="w-4 h-4 text-primary" />
-          Notes & Reflections
-        </h3>
+      {/* ═══ notes ═══ */}
+      <div className="p-5" style={PANEL}>
+        <div className="flex items-center gap-2 mb-3">
+          <FileText className="w-3.5 h-3.5" style={{ color: '#FBBF24' }} />
+          <p style={{ ...MICRO, color: '#94A3B8' }}>Notes & Reflections</p>
+        </div>
         <textarea
           rows={4}
           value={dailyProgress.notes || ''}
-          onChange={e => handleNotesChange(e.target.value)}
-          placeholder="Write important notes, formulas, or reflections here..."
-          className="w-full p-4 rounded-xl bg-surface-muted border border-border text-text-primary text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 leading-relaxed transition-all resize-none"
+          onChange={(e) => handleNotesChange(e.target.value)}
+          placeholder="গুরুত্বপূর্ণ নোট, সূত্র বা অনুভূতি লিখুন..."
+          className={`w-full p-4 bn leading-relaxed resize-none ${INPUT}`}
         />
-        <p className="text-[10px] text-text-muted">Auto-saved • Private to you</p>
+        <p className="text-[9px] mt-2" style={{ color: '#334155' }}>Auto-saved • শুধু আপনার জন্য</p>
       </div>
     </div>
   );

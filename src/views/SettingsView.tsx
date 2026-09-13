@@ -9,17 +9,7 @@ import { AyahCollectionCard } from '../components/AyahCollectionCard';
 import { AvatarPicker } from '../components/AvatarPicker';
 import { AvatarCrop, DEFAULT_CROP } from '../components/UserAvatar';
 import { getAvatarUrl } from '../utils/defaultAvatars';
-import { 
-  Settings, 
-  User, 
-  Database, 
-  Trash2, 
-  RefreshCw, 
-  Code,
-  LogIn,
-  LogOut,
-  Shield
-} from 'lucide-react';
+import { Settings, User, Database, Trash2, RefreshCw, Code, LogIn, LogOut, Shield } from 'lucide-react';
 
 interface SettingsViewProps {
   profile: UserProfile;
@@ -30,13 +20,24 @@ interface SettingsViewProps {
   onLogout: () => void;
 }
 
+const MICRO: React.CSSProperties = {
+  fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase',
+  color: '#475569', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+};
+
+const CARD: React.CSSProperties = {
+  background: 'rgba(13,16,22,0.7)',
+  border: '1px solid rgba(255,255,255,0.06)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+  borderRadius: 16,
+};
+
+const INPUT = 'w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs text-slate-100 focus:outline-none focus:border-[#FBBF24] transition-colors bn';
+
+const LABEL = 'block text-[9px] font-bold mb-1.5 uppercase tracking-[0.15em]';
+
 export const SettingsView: React.FC<SettingsViewProps> = ({
-  profile,
-  onUpdateProfile,
-  onRefreshAppState,
-  onNavigate,
-  onAddToast,
-  onLogout
+  profile, onUpdateProfile, onRefreshAppState, onNavigate, onAddToast, onLogout,
 }) => {
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [nickname, setNickname] = useState(profile.nickname || '');
@@ -70,7 +71,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    const updated: UserProfile = {
+    onUpdateProfile({
       ...profile,
       displayName: displayName.trim() || 'HSC Candidate',
       nickname: nickname.trim() || 'Candidate',
@@ -79,259 +80,151 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       dailyStudyTargetHours: Number(dailyTargetHours),
       preferredLanguage,
       theme,
-      updatedAt: new Date().toISOString()
-    };
-
-    onUpdateProfile(updated);
-    onAddToast('success', 'প্রোফাইল সেটিংস সেভ করা হয়েছে!');
+      updatedAt: new Date().toISOString(),
+    });
+    onAddToast('success', 'প্রোফাইল সেটিংস সেভ করা হয়েছে!');
   };
 
-  const handleSeedData = () => {
-    seedDemoData();
-    onRefreshAppState();
-    onAddToast('success', 'নমুনা ডেমো ডেটা লোড করা হয়েছে!');
-  };
-
-  const handleConfirmClear = () => {
-    clearAllLocalData();
-    onRefreshAppState();
-    setIsClearModalOpen(false);
-    onAddToast('warning', 'সকল লোকাল ডেটা মুছে ফেলা হয়েছে!');
-  };
-
-  const handleForceSync = async () => {
-    const syncedCount = await flushPendingSyncs();
-    onRefreshAppState();
-    onAddToast('info', `${syncedCount} টি পেন্ডিং পরিবর্তন সিঙ্ক হয়েছে!`);
-  };
+  const actions = [
+    { label: 'ডেমো ডেটা', icon: Database, tint: '#38BDF8', onClick: () => { seedDemoData(); onRefreshAppState(); onAddToast('success', 'নমুনা ডেমো ডেটা লোড হয়েছে!'); } },
+    { label: 'ক্লাউড সিঙ্ক', icon: RefreshCw, tint: '#FBBF24', onClick: async () => { const n = await flushPendingSyncs(); onRefreshAppState(); onAddToast('info', `${n} টি পরিবর্তন সিঙ্ক হয়েছে!`); } },
+    { label: 'ডেভ প্যানেল', icon: Code, tint: '#F59E0B', onClick: () => onNavigate('dev_panel') },
+    ...(profile.isAdmin ? [{ label: 'অ্যাডমিন', icon: Shield, tint: '#A855F7', onClick: () => onNavigate('admin') }] : []),
+    { label: 'লগইন পেজ', icon: LogIn, tint: '#94A3B8', onClick: () => onNavigate('login') },
+    { label: 'সাইন আউট', icon: LogOut, tint: '#F87171', onClick: onLogout },
+    { label: 'স্টোরেজ মুছুন', icon: Trash2, tint: '#FB7185', onClick: () => setIsClearModalOpen(true) },
+  ];
 
   return (
-    <div className="space-y-6  pb-16 animate-in fade-in">
-      {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-surface border-border-strong shadow-xl text-text-primary">
-        <div className="flex items-center gap-2 text-gold mb-1">
-          <Settings className="w-5 h-5" />
-          <span className="text-xs font-bold  ">অ্যাপ সেটিংস ও প্রেফারেন্স</span>
-        </div>
-        <h2 className="text-xl sm:text-2xl font-black text-text-primary">
-          প্রোফাইল, থিম ও ডাটাবেজ কন্ট্রোল
-        </h2>
-        <p className="text-xs sm:text-sm text-text-secondary/90 mt-1">
-          প্রোফাইল তথ্য আপডেট, থিম পছন্দ এবং লোকাল স্টোরেজ সিঙ্ক ম্যানেজ করুন।
-        </p>
+    <div className="space-y-6 pb-20 animate-in fade-in">
+      {/* ═══ PAGE HEADER ═══ */}
+      <div>
+        <p style={MICRO}>Settings</p>
+        <h1 className="text-xl sm:text-2xl font-black bn mt-1" style={{ color: '#F4F6F8', fontFamily: "'Anek Bangla', sans-serif" }}>
+          প্রোফাইল ও প্রেফারেন্স
+        </h1>
       </div>
-      {/* 🎭 Avatar Picker */}
+
+      {/* ═══ AVATAR ═══ */}
       <AvatarPicker
         googlePhotoUrl={profile.photoURL || profile.avatar_url}
         currentAvatarId={profile.defaultAvatarId || 'av1'}
         useGooglePhoto={profile.useGooglePhoto !== false}
-        crop={profile.avatarCrop || { zoom: 100, x: 0, y: 0 }}
+        crop={profile.avatarCrop || DEFAULT_CROP}
         onSelectDefault={handleAvatarSelect}
         onToggleGoogle={handleToggleGoogle}
         onCropChange={handleCropChange}
       />
 
-      {/* Profile Form */}
-      <form onSubmit={handleSaveProfile} className="p-6 rounded-2xl bg-surface border border-border shadow-lg space-y-4">
-        <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 pb-2 border-b border-border">
-          <User className="w-4 h-4 text-gold" />
-          ব্যক্তিগত ও একাডেমিক তথ্য
-        </h3>
+      {/* ═══ PROFILE FORM ═══ */}
+      <form onSubmit={handleSaveProfile} className="p-5 sm:p-6 space-y-5" style={CARD}>
+        <div className="flex items-center gap-2 pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <User className="w-3.5 h-3.5" style={{ color: '#FBBF24' }} />
+          <p style={{ ...MICRO, color: '#94A3B8' }}>Profile</p>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1">পূর্ণ নাম</label>
-            <input
-              type="text"
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-surface-muted border border-border text-text-primary text-xs focus:outline-none focus:border-gold"
-            />
+            <label className={LABEL} style={{ color: '#64748B' }}>পূর্ণ নাম</label>
+            <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={INPUT} />
           </div>
-
           <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1">ডাক নাম</label>
-            <input
-              type="text"
-              value={nickname}
-              onChange={e => setNickname(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-surface-muted border border-border text-text-primary text-xs focus:outline-none focus:border-gold"
-            />
+            <label className={LABEL} style={{ color: '#64748B' }}>ডাক নাম</label>
+            <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className={INPUT} />
           </div>
-
           <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1">টার্গেট ইউনিভার্সিটি/মেডিকেল</label>
-            <input
-              type="text"
-              value={targetUniversity}
-              onChange={e => setTargetUniversity(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-surface-muted border border-border text-text-primary text-xs focus:outline-none focus:border-gold"
-            />
+            <label className={LABEL} style={{ color: '#64748B' }}>টার্গেট ইউনিভার্সিটি</label>
+            <input type="text" value={targetUniversity} onChange={(e) => setTargetUniversity(e.target.value)} className={INPUT} />
           </div>
-
           <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1">গ্রুপ (Academic Group)</label>
-            <select
-              value={academicGroup}
-              onChange={e => setAcademicGroup(e.target.value as AcademicGroup)}
-              className="w-full px-3 py-2.5 rounded-xl bg-surface-muted border border-border text-text-primary text-xs focus:outline-none focus:border-gold"
-            >
+            <label className={LABEL} style={{ color: '#64748B' }}>গ্রুপ</label>
+            <select value={academicGroup} onChange={(e) => setAcademicGroup(e.target.value as AcademicGroup)} className={INPUT}>
               <option value="Science">Science (বিজ্ঞান)</option>
               <option value="Commerce">Commerce (ব্যবসায়)</option>
               <option value="Arts">Arts (মানবিক)</option>
             </select>
           </div>
-
           <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1">দৈনিক অধ্যয়ন লক্ষ্য (ঘণ্টা)</label>
-            <input
-              type="number"
-              min="1"
-              max="18"
-              value={dailyTargetHours}
-              onChange={e => setDailyTargetHours(Number(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-surface-muted border border-border text-text-primary text-xs focus:outline-none focus:border-gold"
-            />
+            <label className={LABEL} style={{ color: '#64748B' }}>দৈনিক লক্ষ্য (ঘণ্টা)</label>
+            <input type="number" min={1} max={18} value={dailyTargetHours} onChange={(e) => setDailyTargetHours(Number(e.target.value))} className={INPUT} />
           </div>
-
           <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1">অ্যাপ থিম (App Theme)</label>
-            <select
-              value={theme}
-              onChange={e => setTheme(e.target.value as AppTheme)}
-              className="w-full px-3 py-2.5 rounded-xl bg-surface-muted border border-border text-text-primary text-xs focus:outline-none focus:border-gold"
-            >
-              <option value="dark">Dark Theme (ডিফল্ট)</option>
-              <option value="light">Light Theme</option>
-              <option value="system">System Default</option>
+            <label className={LABEL} style={{ color: '#64748B' }}>থিম</label>
+            <select value={theme} onChange={(e) => setTheme(e.target.value as AppTheme)} className={INPUT}>
+              <option value="dark">Dark (ডিফল্ট)</option>
+              <option value="light">Light</option>
+              <option value="system">System</option>
             </select>
           </div>
         </div>
-       
-       {/* ⭐ NEW: Language selector */}
-       <div>
-         <label className="text-xs font-semibold text-text-secondary block mb-1">পছন্দের ভাষা (Language)</label>
-         <div className="grid grid-cols-3 gap-2">
-           {[
-             { id: 'bn', label: 'বাংলা' },
-             { id: 'en', label: 'English' },
-             { id: 'both', label: 'বাংলা+EN' }
-           ].map(l => (
-             <button
-               key={l.id}
-               type="button"
-               onClick={() => setPreferredLanguage(l.id as PreferredLanguage)}
-               className={`p-2.5 rounded-xl border text-xs font-bold transition-all min-h-11 ${
-                 preferredLanguage === l.id
-                   ? 'bg-gold hover:bg-[#b88e22] text-[#0F111A] shadow-md border-transparent'
-                   : 'bg-surface-muted border-border text-text-secondary hover:border-gold/50'
-               }`}
-             >
-               {l.label}
-             </button>
-           ))}
-         </div>
-         <p className="text-[10px] text-text-muted mt-1.5">
-           {preferredLanguage === 'en' && 'All subjects and topics will appear in English.'}
-           {preferredLanguage === 'bn' && 'সকল বিষয় ও টপিক বাংলায় দেখাবে।'}
-           {preferredLanguage === 'both' && 'বিষয় ও টপিক বাংলায় দেখাবে (English in brackets)।'}
-         </p>
-       </div>
 
-        <div className="pt-3 border-t border-border flex justify-end">
+        <div>
+          <label className={LABEL} style={{ color: '#64748B' }}>ভাষা</label>
+          <div className="grid grid-cols-3 gap-2">
+            {([['bn', 'বাংলা'], ['en', 'English'], ['both', 'বাংলা+EN']] as [PreferredLanguage, string][]).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setPreferredLanguage(id)}
+                className="py-2.5 rounded-xl text-[11px] font-bold bn transition-all"
+                style={
+                  preferredLanguage === id
+                    ? { background: 'linear-gradient(135deg,#FBBF24,#D97706)', color: '#0F111A', boxShadow: '0 4px 14px rgba(251,191,36,0.3)' }
+                    : { background: 'rgba(255,255,255,0.03)', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.08)' }
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-gold hover:bg-[#b88e22] text-[#0F111A] font-extrabold text-xs shadow-lg transition-all min-h-11"
+            className="px-6 py-2.5 rounded-xl text-xs font-extrabold bn transition-all hover:brightness-110"
+            style={{ background: 'linear-gradient(135deg,#FBBF24,#D97706)', color: '#0F111A', boxShadow: '0 4px 14px rgba(251,191,36,0.3)' }}
           >
-            পরিবর্তনগুলো সেভ করুন
+            সেভ করুন
           </button>
         </div>
       </form>
 
-      {/* Storage & Demo Actions */}
-      <div className="p-6 rounded-2xl bg-surface border border-border shadow-lg space-y-4">
-        <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 pb-2 border-b border-border">
-          <Database className="w-4 h-4 text-gold" />
-          লোকাল স্টোরেজ ও ডেমো ডাটাবেজ
-        </h3>
+      {/* ═══ ACTIONS GRID ═══ */}
+      <div className="p-5 sm:p-6 space-y-4" style={CARD}>
+        <div className="flex items-center gap-2 pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <Database className="w-3.5 h-3.5" style={{ color: '#FBBF24' }} />
+          <p style={{ ...MICRO, color: '#94A3B8' }}>System</p>
+        </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={handleSeedData}
-            className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover border border-transparent text-text-primary text-xs font-bold shadow-md transition-all flex items-center gap-2 min-h-11"
-          >
-            <Database className="w-4 h-4 text-gold" />
-            নমুনা ডেমো ডেটা লোড করুন
-          </button>
-
-          <button
-            onClick={handleForceSync}
-            className="px-4 py-2.5 rounded-xl bg-red-900 hover:bg-red-800 text-text-primary text-xs font-bold border-border-strong transition-all flex items-center gap-2 min-h-11"
-          >
-            <RefreshCw className="w-4 h-4 text-gold" />
-            Force Cloud Sync
-          </button>
-
-          <button
-            onClick={() => onNavigate('dev_panel')}
-            className="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all flex items-center gap-2 min-h-11"
-          >
-            <Code className="w-4 h-4 text-gold" />
-            Developer Test Suite
-          </button>
-                    {profile.isAdmin && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {actions.map((a) => (
             <button
-              onClick={() => onNavigate('admin')}
-              className="px-4 py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition-all flex items-center gap-2 min-h-11"
+              key={a.label}
+              onClick={a.onClick}
+              className="flex items-center gap-2.5 p-3 rounded-xl transition-all hover:bg-white/[0.05] active:scale-[0.98]"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
             >
-              <Shield className="w-4 h-4" />
-              Admin Panel
+              <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${a.tint}15`, border: `1px solid ${a.tint}30` }}>
+                <a.icon className="w-3.5 h-3.5" style={{ color: a.tint }} />
+              </span>
+              <span className="text-[10px] font-bold bn text-left" style={{ color: '#CBD5E1' }}>{a.label}</span>
             </button>
-          )}
-
-
-          <button
-            onClick={() => onNavigate('login')}
-            className="px-4 py-2.5 rounded-xl bg-surface-muted hover:bg-red-900 border border-border text-text-muted text-xs font-mono font-bold transition-all flex items-center gap-2 min-h-11"
-          >
-            <LogIn className="w-4 h-4 text-gold" />
-            System Login Page
-          </button>
-
-          <button
-            onClick={onLogout}
-            className="px-4 py-2.5 rounded-xl bg-red-950 hover:bg-red-900 border border-red-800/60 text-red-200 text-xs font-bold shadow-md transition-all flex items-center gap-2 min-h-11"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </button>
-
-          <button
-            onClick={() => setIsClearModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-800/60 text-rose-200 text-xs font-bold shadow-md transition-all flex items-center gap-2 min-h-11 ml-auto"
-          >
-            <Trash2 className="w-4 h-4" />
-            Clear Storage
-          </button>
+          ))}
         </div>
       </div>
-      {/* ⭐ Daily Study Notifications */}
+
+      {/* ═══ EXISTING SECTIONS ═══ */}
       <NotificationSettings />
-
-      {/* ⭐ PWA Install Status */}
       <PwaStatusCard />
-
-      {/* ⭐ Ayah Collection */}
       <AyahCollectionCard />
 
-      {/* Confirmation Modal for Clearing Storage */}
-      {/* Confirmation Modal for Clearing Storage */}
       <ConfirmationModal
         isOpen={isClearModalOpen}
         title="সকল লোকাল ডেটা মুছে ফেলা"
-        message="আপনি কি নিশ্চিত যে লোকাল স্টোরেজে সংরক্ষিত সকল প্রোগ্রেস ও কাস্টম নোটস মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা সম্ভব হবে না।"
+        message="আপনি কি নিশ্চিত যে লোকাল স্টোরেজে সংরক্ষিত সকল প্রোগ্রেস ও কাস্টম নোটস মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা সম্ভব হবে না।"
         confirmLabel="হ্যাঁ, সব মুছে ফেলুন"
-        onConfirm={handleConfirmClear}
+        onConfirm={() => { clearAllLocalData(); onRefreshAppState(); setIsClearModalOpen(false); onAddToast('warning', 'সকল লোকাল ডেটা মুছে ফেলা হয়েছে!'); }}
         onCancel={() => setIsClearModalOpen(false)}
       />
     </div>

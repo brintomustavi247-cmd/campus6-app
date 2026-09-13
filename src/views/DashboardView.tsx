@@ -45,6 +45,22 @@ const getGreeting = (): string => {
   return 'শুভ রাত্রি';
 };
 
+/* ─── premium primitives ─── */
+const PANEL: React.CSSProperties = {
+  background: 'rgba(18,22,30,0.9)',
+  border: '1px solid rgba(255,255,255,0.11)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07), 0 10px 30px rgba(0,0,0,0.35)',
+  borderRadius: 16,
+};
+
+const MICRO: React.CSSProperties = {
+  fontSize: 9,
+  letterSpacing: '0.22em',
+  textTransform: 'uppercase',
+  color: '#475569',
+  fontWeight: 800,
+  fontFamily: "'JetBrains Mono', monospace",
+};
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   profile,
@@ -101,7 +117,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const liveExams = activeExams.filter((exam) => exam.status === 'live');
   const upcomingExams = activeExams.filter((exam) => exam.status === 'upcoming');
 
-  const pct = todayProgress.completionPercent;
   const targetHours = profile.dailyStudyTargetHours || 8;
   const studyPct = Math.min(100, Math.round((todayProgress.studyHours / targetHours) * 100));
 
@@ -118,8 +133,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   ];
 
   return (
-    <div className="space-y-5 pb-12 animate-in fade-in">
-      {/* ═══ HERO BANNER — Deep Minimal Luxury ═══ */}
+    <div className="space-y-6 pb-12 animate-in fade-in">
+      {/* ═══ HERO BANNER — অপরিবর্তিত ═══ */}
       <div
         className="relative overflow-hidden rounded-2xl shadow-2xl"
         style={{
@@ -127,15 +142,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           border: '1px solid rgba(255,255,255,0.06)',
         }}
       >
-        {/* ambient brand glows (whisper level) */}
         <div className="absolute -top-24 -left-16 w-80 h-56 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(ellipse, rgba(220,20,60,0.09), transparent 70%)' }} />
         <div className="absolute -bottom-24 -right-16 w-80 h-56 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(ellipse, rgba(251,191,36,0.07), transparent 70%)' }} />
-
-        {/* top hairline */}
         <div className="absolute top-0 inset-x-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(220,20,60,0.5), rgba(251,191,36,0.45), transparent)' }} />
 
         <div className="relative z-10 p-5 sm:p-7 flex flex-col lg:flex-row lg:items-center justify-between gap-5 lg:gap-8">
-          {/* LEFT: identity */}
           <div className="flex items-center gap-4 min-w-0">
             <div className="relative shrink-0">
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full p-0.5" style={{ background: 'linear-gradient(135deg,#DC143C,#FBBF24)' }}>
@@ -163,16 +174,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="min-w-0">
-              <p
-                className="text-[10px] font-bold bn"
-                style={{ color: 'rgba(251,191,36,0.85)', fontFamily: "'Anek Bangla', sans-serif", letterSpacing: '0.08em' }}
-              >
+              <p className="text-[10px] font-bold bn" style={{ color: 'rgba(251,191,36,0.85)', fontFamily: "'Anek Bangla', sans-serif", letterSpacing: '0.08em' }}>
                 ✦ {getGreeting()},
               </p>
-              <h1
-                className="text-xl sm:text-2xl font-bold truncate mt-0.5 bn"
-                style={{ color: '#F8FAFC', fontFamily: "'Anek Bangla', sans-serif", letterSpacing: '0.01em' }}
-              >
+              <h1 className="text-xl sm:text-2xl font-bold truncate mt-0.5 bn" style={{ color: '#F8FAFC', fontFamily: "'Anek Bangla', sans-serif", letterSpacing: '0.01em' }}>
                 {profile.nickname || 'শিক্ষার্থী'}
               </h1>
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -186,7 +191,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* RIGHT: quiet status + actions */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 shrink-0">
             <div className="flex flex-col gap-1.5">
               <p className="flex items-center gap-2 text-[11px] bn" style={{ color: '#94A3B8' }}>
@@ -207,11 +211,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 onClick={() => onNavigate('daily_plan')}
                 className="px-4 py-2.5 rounded-xl text-xs font-extrabold bn transition-all hover:brightness-110"
-                style={{
-                  background: 'linear-gradient(135deg,#FBBF24,#D97706)',
-                  color: '#0F111A',
-                  boxShadow: '0 4px 16px rgba(251,191,36,0.25)',
-                }}
+                style={{ background: 'linear-gradient(135deg,#FBBF24,#D97706)', color: '#0F111A', boxShadow: '0 4px 16px rgba(251,191,36,0.25)' }}
               >
                 আজকের প্ল্যান
               </button>
@@ -228,101 +228,93 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* ═══ আজকের আয়াত (premium daily card) ═══ */}
+      {/* ═══ আজকের আয়াত — অপরিবর্তিত ═══ */}
       <DailyAyahCard />
 
-      {/* ═══ STATS GRID ═══ */}
+      {/* ═══ STATS — premium minimal ═══ */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="relative overflow-hidden p-5 rounded-2xl bg-surface border border-border shadow-lg flex items-center justify-between gap-4 transition-all hover:-translate-y-0.5">
-          <div className="absolute top-0 left-0 right-0 h-0.75" style={{ background: 'linear-gradient(90deg,#DC143C,#FBBF24)' }} />
+        {/* tasks */}
+        <div className="p-5" style={PANEL}>
+          <div className="flex items-center justify-between mb-4">
+            <p style={MICRO}>Today's Tasks</p>
+            <span className="text-[10px] font-black font-mono tabular-nums" style={{ color: '#94A3B8' }}>
+              {todayTasksDone}/{todayTasksTotal}
+            </span>
+          </div>
 
           {todayTasksTotal === 0 ? (
-            <div className="w-full">
-              <h3 className="text-xs font-bold text-text-secondary bn">আজকের কাজ সম্পন্ন</h3>
-              <p className="text-sm font-bold text-text-muted mt-2 bn">
-                এখনো কোনো টার্গেট সেট করা হয়নি
-              </p>
+            <div>
+              <p className="text-[11px] bn" style={{ color: '#475569' }}>এখনো কোনো টার্গেট সেট করা হয়নি</p>
               <button
                 onClick={() => onNavigate('daily_plan')}
-                className="mt-3 px-3 py-2 rounded-xl bg-primary/10 border border-primary/40 text-primary text-[11px] font-extrabold transition-all hover:bg-primary/20 bn"
+                className="mt-3 px-3.5 py-2 rounded-xl text-[10px] font-extrabold bn transition-all hover:brightness-110"
+                style={{ background: 'rgba(220,20,60,0.12)', border: '1px solid rgba(220,20,60,0.35)', color: '#F87171' }}
               >
                 + টার্গেট সেট করুন
               </button>
             </div>
           ) : (
-            <>
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-xs font-bold text-text-secondary bn">আজকের কাজ সম্পন্ন</h3>
-                <p className="text-2xl font-black text-text-primary font-mono mt-1">
-                  {todayTasksDone} / {todayTasksTotal}
-                </p>
-                <p className="text-[11px] text-text-muted mt-1 bn">
-                  {taskPct >= 70
-                    ? '🎉 ৭০%+ সম্পন্ন! স্ট্রিক সুরক্ষিত।'
-                    : `আর ${todayTasksTotal - todayTasksDone} টি কাজ বাকি`}
+                <p className="text-2xl font-black font-mono tabular-nums" style={{ color: '#F8FAFC' }}>{taskPct}%</p>
+                <p className="text-[10px] bn mt-1" style={{ color: '#475569' }}>
+                  {taskPct >= 70 ? '🎉 স্ট্রিক সুরক্ষিত' : `আর ${todayTasksTotal - todayTasksDone} টি বাকি`}
                 </p>
               </div>
               <ProgressRing
                 percent={taskPct}
-                size={100}
-                strokeWidth={8}
-                primaryColor={taskPct >= 70 ? 'var(--color-success)' : taskPct >= 40 ? 'var(--color-gold)' : 'var(--color-primary)'}
-                secondaryColor="var(--color-surface-muted)"
+                size={84}
+                strokeWidth={7}
+                primaryColor={taskPct >= 70 ? '#10B981' : taskPct >= 40 ? '#FBBF24' : '#DC143C'}
+                secondaryColor="rgba(255,255,255,0.06)"
                 label="কাজ"
               />
-            </>
+            </div>
           )}
         </div>
 
         <StreakCard streak={streak} />
 
-        <div className="relative overflow-hidden p-5 rounded-2xl bg-surface border border-border shadow-lg flex flex-col justify-between transition-all hover:-translate-y-0.5">
-          <div className="absolute top-0 left-0 right-0 h-0.75" style={{ background: 'linear-gradient(90deg,#FBBF24,#10B981)' }} />
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-text-secondary bn">পড়ার ঘণ্টা ও টার্গেট</span>
+        {/* study hours */}
+        <div className="p-5" style={PANEL}>
+          <div className="flex items-center justify-between mb-4">
+            <p style={MICRO}>Study Hours</p>
             <span
-              className="text-[10px] font-black font-mono px-2 py-0.5 rounded-full"
+              className="text-[9px] font-black font-mono px-1.5 py-0.5 rounded"
               style={{
-                background: studyPct >= 100 ? 'rgba(16,185,129,0.15)' : 'rgba(251,191,36,0.12)',
-                color: studyPct >= 100 ? '#10B981' : '#FBBF24',
+                background: studyPct >= 100 ? 'rgba(16,185,129,0.12)' : 'rgba(251,191,36,0.1)',
+                color: studyPct >= 100 ? '#34D399' : '#FBBF24',
+                border: `1px solid ${studyPct >= 100 ? 'rgba(16,185,129,0.3)' : 'rgba(251,191,36,0.25)'}`,
               }}
             >
               {studyPct}%
             </span>
           </div>
 
-          <div className="my-2">
-            <p
-              className="text-3xl font-black font-mono"
+          <p className="text-3xl font-black font-mono tabular-nums leading-none" style={{ color: '#F8FAFC' }}>
+            {todayProgress.studyHours}
+            <span className="text-sm ml-1" style={{ color: '#475569' }}>h</span>
+          </p>
+          <p className="text-[10px] mt-1 mb-3" style={{ color: '#475569' }}>/ {targetHours}h target</p>
+
+          <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-700"
               style={{
-                background: studyPct >= 100 ? 'linear-gradient(90deg,#10B981,#35D6FF)' : 'linear-gradient(90deg,#FBBF24,#DC143C)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent',
+                width: `${studyPct}%`,
+                background: studyPct >= 100 ? 'linear-gradient(90deg,#10B981,#34D399)' : 'linear-gradient(90deg,#DC143C,#FBBF24)',
+                boxShadow: '0 0 8px rgba(251,191,36,0.35)',
               }}
-            >
-              {todayProgress.studyHours}h
-            </p>
-            <p className="text-xs text-text-muted mt-0.5">/ {targetHours}h target</p>
-            <div className="w-full bg-surface-muted rounded-full h-2 mt-2 overflow-hidden border border-border">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${studyPct}%`,
-                  background: studyPct >= 100 ? 'linear-gradient(90deg,#10B981,#059669)' : 'linear-gradient(90deg,#DC143C,#FBBF24)',
-                  boxShadow: studyPct >= 100 ? '0 0 10px rgba(16,185,129,0.4)' : '0 0 10px rgba(251,191,36,0.3)',
-                }}
-              />
-            </div>
+            />
           </div>
 
-          <p className="text-[11px] text-text-muted bn">
-            ফোকাস রেটিং: <span className="font-bold text-gold">{todayProgress.focusRating || 8}/10</span>
+          <p className="text-[10px] bn mt-3" style={{ color: '#475569' }}>
+            ফোকাস রেটিং <span className="font-black font-mono" style={{ color: '#FBBF24' }}>{todayProgress.focusRating || 8}/10</span>
           </p>
         </div>
       </div>
 
-      {/* ═══ SCHEDULE + EXAM + QUICK ACTIONS ═══ */}
+      {/* ═══ SCHEDULE + EXAMS + SIDEBAR ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-4">
           <DailyRoutineCard
@@ -357,90 +349,68 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="space-y-4">
           <PhysicsHunterLinkCard />
 
-          <div className="p-5 rounded-2xl bg-surface border border-border shadow-lg space-y-3">
-            <h3 className="text-xs font-bold text-text-secondary pb-2 border-b border-border flex items-center gap-2 bn">
-              <Zap className="w-4 h-4 text-gold" />
-              দ্রুত অ্যাকশনসমূহ (Quick Actions)
-            </h3>
-
-            <div className="space-y-2">
-              {quickActions.map((a) => (
-                <button
-                  key={a.page}
-                  onClick={() => {
-                    if ((a as any).autoStart) {
-                      window.location.hash = `#autostart=${(a as any).autoStart}`;
-                    }
-                    onNavigate(a.page);
-                  }}
-                  className="w-full p-3 rounded-xl bg-surface-muted hover:bg-surface-hover border border-border text-text-primary text-xs font-bold flex items-center justify-between transition-all min-h-11 group hover:border-white/20 bn"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: a.bg }}>
-                      <a.icon className="w-4 h-4" style={{ color: a.color }} />
-                    </span>
-                    {a.label}
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-text-muted group-hover:text-text-primary group-hover:translate-x-0.5 transition-all" />
-                </button>
-              ))}
+          {/* quick actions — minimal rows */}
+          <div className="overflow-hidden" style={PANEL}>
+            <div className="px-5 py-3.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <p style={MICRO}>Quick Actions</p>
             </div>
+            {quickActions.map((a, i) => (
+              <button
+                key={a.page}
+                onClick={() => {
+                  if ((a as any).autoStart) window.location.hash = `#autostart=${(a as any).autoStart}`;
+                  onNavigate(a.page);
+                }}
+                className="w-full flex items-center gap-3 px-5 py-3 transition-all hover:bg-white/[0.02] hover:translate-x-0.5"
+                style={{ borderBottom: i !== quickActions.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+              >
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: a.bg, border: `1px solid ${a.color}25` }}>
+                  <a.icon className="w-3.5 h-3.5" style={{ color: a.color }} />
+                </span>
+                <span className="flex-1 text-left text-[11px] font-bold bn" style={{ color: '#CBD5E1' }}>{a.label}</span>
+                <ArrowRight className="w-3.5 h-3.5 shrink-0" style={{ color: '#334155' }} />
+              </button>
+            ))}
           </div>
 
-          <div className="p-5 rounded-2xl bg-surface border border-border shadow-lg space-y-3">
-            <h3 className="text-xs font-bold text-text-secondary pb-2 border-b border-border flex items-center gap-2 bn">
-              <BookOpen className="w-4 h-4 text-emerald-400" />
-              Physics Hunter — Quick Access
-            </h3>
+          {/* physics hunter links */}
+          <div className="p-5" style={PANEL}>
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="w-3.5 h-3.5" style={{ color: '#34D399' }} />
+              <p style={{ ...MICRO, color: '#94A3B8' }}>Physics Hunter</p>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {PH_QUICK_LINKS.map((link) => (
                 <button
                   key={link.label}
                   onClick={() => window.open(link.url, '_blank')}
-                  className="p-2.5 rounded-xl bg-surface-muted hover:bg-surface-hover border border-border text-text-primary text-[11px] font-bold flex items-center gap-2 transition-all hover:border-emerald-400/50 bn"
+                  className="p-2.5 rounded-xl text-[10px] font-bold bn flex items-center gap-2 transition-all hover:bg-white/[0.05] active:scale-[0.98]"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', color: '#CBD5E1' }}
                 >
-                  <span className="text-base">{link.emoji}</span>
-                  {link.label}
+                  <span className="text-sm">{link.emoji}</span>
+                  <span className="truncate">{link.label}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div
-            className="relative overflow-hidden rounded-2xl p-5 shadow-lg"
-            style={{
-              background: 'linear-gradient(165deg, #101214 0%, #0C0D12 50%, #121014 100%)',
-              border: '1px solid rgba(255,255,255,0.06)',
-            }}
-          >
-            {/* ambient glow */}
-            <div className="absolute -top-16 -right-16 w-48 h-32 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(ellipse, rgba(251,191,36,0.08), transparent 70%)' }} />
-            <div className="absolute top-0 inset-x-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(251,191,36,0.4), transparent)' }} />
-
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-2.5">
-                <span className="h-px w-6" style={{ background: 'linear-gradient(90deg, transparent, rgba(251,191,36,0.4))' }} />
-                <span className="text-[9px] font-bold tracking-[0.25em] uppercase bn" style={{ color: '#FBBF24' }}>
-                  আজকের টিপ
-                </span>
-                <span className="h-px w-6" style={{ background: 'linear-gradient(90deg, rgba(251,191,36,0.4), transparent)' }} />
-              </div>
-
-              {(() => {
-                const tip = getTodayTip();
-                return (
-                  <>
-                    <h4 className="text-sm font-bold bn mb-2 flex items-center gap-2" style={{ color: '#F8FAFC', fontFamily: "'Anek Bangla', sans-serif" }}>
-                      <span className="text-base">{tip.emoji}</span>
-                      {tip.title}
-                    </h4>
-                    <p className="text-[11px] leading-relaxed bn" style={{ color: '#94A3B8', fontFamily: "'Anek Bangla', sans-serif" }}>
-                      {tip.body}
-                    </p>
-                  </>
-                );
-              })()}
-            </div>
+          {/* daily tip */}
+          <div className="p-5" style={PANEL}>
+            <p style={MICRO}>Daily Tip</p>
+            {(() => {
+              const tip = getTodayTip();
+              return (
+                <>
+                  <h4 className="text-[13px] font-bold bn mt-3 mb-1.5 flex items-center gap-2" style={{ color: '#F8FAFC', fontFamily: "'Anek Bangla', sans-serif" }}>
+                    <span className="text-base">{tip.emoji}</span>
+                    {tip.title}
+                  </h4>
+                  <p className="text-[11px] leading-relaxed bn" style={{ color: '#64748B', fontFamily: "'Anek Bangla', sans-serif" }}>
+                    {tip.body}
+                  </p>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>

@@ -396,6 +396,9 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
       minSeconds: number,
       explicitDeltaSeconds?: number,
     ): Promise<number> => {
+      // ⭐ 2min Start Mode = warm-up → ranked time-এ count হবে না
+      if (modeRef.current === '2min') return 0;
+
       const totalElapsed =
         explicitDeltaSeconds != null
           ? flushedSecondsRef.current + explicitDeltaSeconds
@@ -484,6 +487,9 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
     const succeededIds = new Set<string>();
 
     for (const payload of mine) {
+      // ⭐ 2min warm-up chunks never count — purge হবে, replay নয়।
+      if (payload.mode === '2min') continue;
+
       try {
         const success = await withTimeout(
           pushStudySessionToSupabase({
@@ -523,6 +529,7 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
       // Second pass guard: rebuild properly without __qindex leaking forward.
       const remainingClean = pending.filter((p, idx) => {
         if (!p || p.user_id !== userId) return true;
+        if (p.mode === '2min') return false; // ⭐ warm-up chunks purge
         return !succeededIds.has(p.id || `idx:${idx}`);
       });
 
@@ -599,22 +606,26 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
         completed_at: nowIso,
       };
 
-      try {
-        const pendingSessions = JSON.parse(
-          localStorage.getItem(PENDING_SESSIONS_KEY) || '[]',
-        );
-        // Belt-and-braces: drop any stale payload carrying the SAME id
-        // (e.g., queued on a previous close and not yet flushed — rare, but
-        // pushing duplicates would rely purely on server-side dedupe).
-        const deduped = pendingSessions.filter((p: any) => p?.id !== intervalKey);
-        deduped.push(payload);
-        localStorage.setItem(PENDING_SESSIONS_KEY, JSON.stringify(deduped));
+      // ⭐ 2min warm-up: crash-queue-তেও যাবে না — ranked pipeline fully closed.
+      // (নিচের live-clear block তবুও চলবে, তাই status/live ঠিক থাকবে।)
+      if (modeRef.current !== '2min') {
+        try {
+          const pendingSessions = JSON.parse(
+            localStorage.getItem(PENDING_SESSIONS_KEY) || '[]',
+          );
+          // Belt-and-braces: drop any stale payload carrying the SAME id
+          // (e.g., queued on a previous close and not yet flushed — rare, but
+          // pushing duplicates would rely purely on server-side dedupe).
+          const deduped = pendingSessions.filter((p: any) => p?.id !== intervalKey);
+          deduped.push(payload);
+          localStorage.setItem(PENDING_SESSIONS_KEY, JSON.stringify(deduped));
 
-        // Mark as flushed so restore doesn't chase the same seconds again.
-        flushedSecondsRef.current = totalElapsed;
-        saveLocalState(isRunningRef.current, secondsLeftRef.current);
-      } catch (error) {
-        console.warn('[Timer] Failed to queue partial session:', error);
+          // Mark as flushed so restore doesn't chase the same seconds again.
+          flushedSecondsRef.current = totalElapsed;
+          saveLocalState(isRunningRef.current, secondsLeftRef.current);
+        } catch (error) {
+          console.warn('[Timer] Failed to queue partial session:', error);
+        }
       }
 
       // ⭐ LIVE-STUCK FIX: tab বন্ধ করলে "focus" status forever থেকে যেত।
@@ -750,8 +761,9 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
 
         if (userId) {
           const deltaSeconds = Math.max(0, safeElapsed - flushedSecondsRef.current);
+          const isWarmup = completedMode === '2min';
 
-          if (deltaSeconds >= 1) {
+          if (deltaSeconds >= 1 && !isWarmup) {
             try {
               // ⭐ FINAL CHUNK — db.ts inserts row + gated increment. We do
               // NOT touch totals afterward (Fix #1).
@@ -1238,6 +1250,7 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
     const syncLivePreview = async () => {
       const userId = effectiveUserIdRef.current;
       if (!userId) return;
+      if (modeRef.current === '2min') return; // ⭐ warm-up live rank-এ যাবে না
 
       const totalElapsedSec = calculateElapsedSeconds();
       const uncommittedSec = Math.max(0, totalElapsedSec - flushedSecondsRef.current);
