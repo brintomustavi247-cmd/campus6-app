@@ -3,79 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <!-- ============================================================
-         PREMIUM TYPOGRAPHY STACK (Single combined Google Fonts request)
-         ─────────────────────────────────────────────────────────────
-         BANGLA:
-           • Anek Bangla (400..800, variable) → crisp modern UI, native heavy weights
-           • Noto Serif Bengali (500..900)    → editorial premium headings
-           • Noto Sans Bengali (400..700)     → fallback sans
-           • Hind Siliguri (400..700)         → Bengali UI body
-           • Tiro Bangla (italic)             → ayah / literary fallback
-           • Amiri (400, 700)                 → Arabic ayah text
-         ENGLISH:
-           • Plus Jakarta Sans (400..800)     → Latin UI body
-           • Lexend (400..800)                → display headings
-           • Orbitron (500..900)              → brand / logo / numbers
-           • JetBrains Mono (400..800)        → monospace / stats / code
-           • Rajdhani (400..700)              → display fallback
-           • Cormorant Garamond (400..700)    → serif display
-           • Scheherazade New (400, 700)      → Arabic fallback
-         ============================================================ -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400..800&family=Noto+Serif+Bengali:wght@500..900&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&family=Lexend:wght@400..800&family=Michroma&family=Orbitron:wght@500..900&family=JetBrains+Mono:wght@400..800&family=Rajdhani:wght@400;500;600;700&family=Tiro+Bangla:ital@0;1&family=Amiri:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Scheherazade+New:wght@400;700&display=swap"
-      rel="stylesheet"
-    >
-
-    <!-- Icons & Manifest -->
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Hind+Siliguri:wght@300;400;500;600;700&family=Lexend:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet" />
+    <!-- PWA Manifest + Icons -->
     <link rel="manifest" href="/manifest.webmanifest" />
-
-    <!-- PWA meta -->
+    <!-- Premium Bangla + Arabic fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+                           href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@300;400;500;600;700;800&family=Tiro+Bangla:ital@0;1&family=Amiri:wght@400;700&display=swap"
+          rel="stylesheet"
+                                            />
     <meta name="theme-color" content="#090C11" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="CAMPUS 6.0" />
-
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    
     <title>CAMPUS 6.0 — Daily Study Engine</title>
-
     <style>
-      /* ============================================================
-         BASE RESET + PREMIUM TYPOGRAPHY DEFAULTS
-         • font-synthesis: none → browser নকল bold/italic বানাবে না
-         • text-rendering: optimizeLegibility → premium glyph rendering
-         ============================================================ */
+      /* ========== BASE RESET (scoped, safe) ========== */
       *, *::before, *::after { box-sizing: border-box; }
-
-      html {
-        -webkit-text-size-adjust: 100%;
-        text-size-adjust: 100%;
-        font-synthesis: none;
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
 
       body, html {
         margin: 0;
         padding: 0;
         background-color: #090C11;
         color: #ECFDF5;
-        font-family: 'Anek Bangla', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-        line-height: 1.6;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       }
 
       body.loading { overflow: hidden; }
+
+      /* Flex-overflow safety for app UI */
       #root * { min-width: 0; }
 
-      /* Ultra-wide safety */
+      /* ========== Ultra-wide screen safety ========== */
       @media (min-width: 1800px) {
         #root {
           max-width: 1760px;
@@ -84,9 +55,7 @@
         }
       }
 
-      /* ============================================================
-         LOADING SCREEN (Premium splash)
-         ============================================================ */
+      /* ========== LOADING SCREEN ========== */
       #initial-loader {
         position: fixed;
         inset: 0;
@@ -136,11 +105,10 @@
         animation: scaleIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
-      /* Brand title — Orbitron (premium esports display) */
       .brand-title {
         font-family: 'Orbitron', sans-serif;
         font-size: 34px;
-        font-weight: 800;
+        font-weight: 900;
         letter-spacing: 4px;
         color: #F4F7FA;
         text-shadow: 0 0 20px rgba(53, 214, 255, 0.35);
@@ -151,7 +119,6 @@
       .t-green { color: #7DC242; }
       .t-red   { color: #E23B4E; }
 
-      /* Subtitle — JetBrains Mono (tech monospace) */
       .brand-subtitle {
         margin-top: 8px;
         font-family: 'JetBrains Mono', monospace;
@@ -161,7 +128,6 @@
         text-transform: uppercase;
         color: #0AA8D8;
         animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
-        font-variant-numeric: tabular-nums;
       }
 
       .loader-progress {
@@ -187,27 +153,17 @@
         animation: progress 1.4s ease-in-out infinite;
       }
 
-      /* ============================================================
-         KEYFRAMES
-         ============================================================ */
+      /* ========== KEYFRAMES ========== */
       @keyframes pulse    { 0%, 100% { opacity: .6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
       @keyframes scaleIn  { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
       @keyframes slideUp  { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
 
-      /* Mobile refinement */
+      /* ========== MOBILE ========== */
       @media (max-width: 480px) {
         .logo-box { width: 200px; height: 160px; }
         .brand-title { font-size: 26px; letter-spacing: 3px; }
         .brand-subtitle { font-size: 9px; letter-spacing: 3px; }
-      }
-
-      /* Respect reduced motion preference */
-      @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after {
-          animation-duration: 0.01ms !important;
-          transition-duration: 0.01ms !important;
-        }
       }
     </style>
   </head>
@@ -216,7 +172,7 @@
       <div class="loader-content">
         <div class="logo-box" id="logoBox">
           <div class="logo-glow"></div>
-          <!-- Inline SVG — কখনো broken হবে না, HTTP request 0 -->
+          <!-- ✅ INLINE SVG LOGO — external file লাগবে না, কখনো broken হবে না -->
           <svg id="inlineLogo" viewBox="0 0 260 210" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="gSilver" x1="0" y1="0" x2="0" y2="1">
@@ -278,9 +234,8 @@
 
     <div id="root"></div>
 
-    <!-- React entry -->
     <script type="module" src="/src/main.tsx"></script>
-
+    
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
@@ -295,11 +250,10 @@
         });
       }
     </script>
-
-    <!-- Logo auto-upgrade + loader fade-out -->
+    
     <script>
       (function () {
-        // Auto-upgrade: /logo.png exist করলে inline SVG-কে real PNG দিয়ে replace করবে
+        /* 🎁 AUTO-UPGRADE: সার্ভার /logo.png serve করলে আসল PNG-তে switch হয়ে যাবে */
         var test = new Image();
         test.onload = function () {
           var box = document.getElementById('logoBox');
@@ -314,7 +268,7 @@
         };
         test.src = '/logo.png?v=3';
 
-        // Loader fade-out
+        /* Loader fade-out + remove */
         window.addEventListener('DOMContentLoaded', function () {
           setTimeout(function () {
             var loader = document.getElementById('initial-loader');

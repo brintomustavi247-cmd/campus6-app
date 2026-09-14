@@ -3,6 +3,17 @@ import { X, BookMarked, Lock } from 'lucide-react';
 import { getCollection, CollectedAyah, hydrateCollectionFromCloud } from '../utils/ayahCollection';
 import { DAILY_AYAHS } from '../data/dailyAyah';
 
+/**
+ * 💎 AYAH VAULT — Museum-Grade Islamic Collection
+ *
+ * Design language:
+ *   • Mushaf-grade calligraphy (Amiri)
+ *   • Islamic ornamental brackets ﴿ ﴾ + ۞
+ *   • Tier: MUBARAK (মুবারক) → NOORANI (নূরানী) → QUDSI (কুদসী)
+ *   • Holographic shimmer on rare tiers
+ *   • Floating atmospheric vault
+ */
+
 const RARITY = {
   common: {
     ar: 'مُبَارَك', latin: 'MUBARAK', bn: 'মুবারক',
@@ -24,27 +35,28 @@ const RARITY = {
   },
 } as const;
 
-const BN: React.CSSProperties = { fontFamily: "'Hind Siliguri', 'Anek Bangla', sans-serif" };
-
 /* ─── Floating Particle ─── */
 const Particle: React.FC<{ i: number }> = ({ i }) => {
   const style = useMemo(() => {
     const size = 1 + Math.random() * 2;
+    const left = Math.random() * 100;
+    const top = Math.random() * 100;
+    const dur = 8 + Math.random() * 12;
+    const delay = Math.random() * 8;
     return {
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
+      left: `${left}%`,
+      top: `${top}%`,
       width: `${size}px`,
       height: `${size}px`,
       background: i % 3 === 0 ? '#FBBF24' : i % 3 === 1 ? '#6EE7B7' : '#C084FC',
-      animation: `particleFloat ${8 + Math.random() * 12}s ease-in-out ${Math.random() * 8}s infinite`,
+      animation: `particleFloat ${dur}s ease-in-out ${delay}s infinite`,
     } as React.CSSProperties;
   }, [i]);
   return <span className="absolute rounded-full opacity-30 pointer-events-none" style={style} />;
 };
 
-/* ─── Collected Card with FLIP (Front: Arabic+Bangla, Back: Bengali Pronunciation) ─── */
+/* ─── Collected Card (Minimal Glossy Premium) ─── */
 const VaultCard: React.FC<{ c: CollectedAyah; i: number }> = ({ c, i }) => {
-  const [flipped, setFlipped] = useState(false);
   const ayah = DAILY_AYAHS.find((a) => a.id === c.id);
   const t = RARITY[c.rarity] || RARITY.common;
   if (!ayah) return null;
@@ -55,166 +67,156 @@ const VaultCard: React.FC<{ c: CollectedAyah; i: number }> = ({ c, i }) => {
       style={{ animationDelay: `${i * 0.07}s, ${1 + i * 0.4}s` }}
     >
       <div
-        className="flip-card relative cursor-pointer"
-        style={{ aspectRatio: '1.45', perspective: '1200px' }}
-        onClick={() => setFlipped((f) => !f)}
+        className="relative overflow-hidden rounded-[22px] flex flex-col justify-between gap-2 transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-[1.02]"
+        style={{
+          aspectRatio: '1.45',
+          background: t.bg,
+          border: `1px solid ${t.border}`,
+          boxShadow: `0 30px 60px -20px ${t.glow}, inset 0 1px 0 rgba(255,255,255,0.12)`,
+          padding: '1.25rem',
+        }}
       >
+        {/* ⭐ glossy top sheen (glass feel) */}
         <div
-          className="flip-inner w-full h-full"
+          className="absolute inset-x-0 top-0 h-1/2 pointer-events-none"
+          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02) 55%, transparent)' }}
+        />
+
+        {/* micro arabesque dots (whisper) */}
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
           style={{
-            transformStyle: 'preserve-3d',
-            transition: 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
-            transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+            backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.5) 1px, transparent 1px)',
+            backgroundSize: '22px 22px',
+          }}
+        />
+
+        {/* holo shine — hover sweep */}
+        <div
+          className="absolute inset-0 pointer-events-none transition-transform duration-1000 -translate-x-full group-hover:translate-x-full"
+          style={{ background: t.shimmer }}
+        />
+
+        {/* watermark ۞ */}
+        <span
+          className="absolute -right-3 -bottom-8 text-[110px] leading-none pointer-events-none select-none"
+          style={{ color: 'rgba(255,255,255,0.035)', fontFamily: "'Amiri', serif" }}
+        >
+          ۞
+        </span>
+
+        {/* top hairline */}
+        <div
+          className="absolute top-0 inset-x-6 h-px"
+          style={{ background: `linear-gradient(90deg, transparent, ${t.chip}, transparent)`, opacity: 0.55 }}
+        />
+
+        {/* ⭐ top-right: Islamic 8-point star medallion (chip-এর বদলে) */}
+        <div className="absolute top-3.5 right-3.5 w-7 h-7 flex items-center justify-center">
+          <span className="absolute inset-0 rotate-45 rounded-[5px]" style={{ border: `1px solid ${t.chip}`, opacity: 0.5 }} />
+          <span className="absolute inset-0 rounded-[5px]" style={{ border: `1px solid ${t.chip}`, opacity: 0.5 }} />
+          <span className="relative text-[11px] leading-none" style={{ color: t.chip, fontFamily: "'Amiri', serif" }}>
+            ۞
+          </span>
+        </div>
+
+        {/* ⭐ top: rarity calligraphy */}
+        <div className="relative flex items-center justify-center gap-2 pr-8">
+          <span className="h-px w-6 sm:w-8" style={{ background: `linear-gradient(90deg, transparent, ${t.chip})`, opacity: 0.6 }} />
+          <span dir="rtl" className="text-[13px]" style={{ fontFamily: "'Amiri', serif", color: t.chip, letterSpacing: '0.05em' }}>{t.ar}</span>
+          <span className="rotate-45 block w-1 h-1 shrink-0" style={{ background: t.chip }} />
+          <span className="text-[7px] font-black tracking-[0.25em]" style={{ color: t.chip, opacity: 0.85 }}>{t.latin}</span>
+          <span className="h-px w-6 sm:w-8" style={{ background: `linear-gradient(90deg, ${t.chip}, transparent)`, opacity: 0.6 }} />
+        </div>
+
+        {/* ⭐ center: ayah with mushaf ornaments */}
+        <div className="relative flex-1 flex flex-col items-center justify-center py-2">
+          <p
+            dir="rtl"
+            className="text-center leading-loose px-2"
+            style={{
+              fontFamily: "'Amiri', serif",
+              color: '#F8FAFC',
+              fontSize: '17px',
+              textShadow: `0 0 22px ${t.glow}`,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            <span style={{ color: t.chip, fontSize: '18px', opacity: 0.7 }}>﴿</span> {ayah.arabic}{' '}
+            <span style={{ color: t.chip, fontSize: '18px', opacity: 0.7 }}>﴾</span>
+          </p>
+        </div>
+
+        {/* transliteration (উচ্চারণ) */}
+        <p
+          className="text-center px-3"
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '9px',
+            lineHeight: 1.5,
+            fontStyle: 'italic',
+            color: 'rgba(255,255,255,0.6)',
+            wordBreak: 'break-word',
           }}
         >
-          {/* ═══ FRONT FACE — Arabic + Bangla Meaning ═══ */}
-          <div
-            className="absolute inset-0 rounded-[22px] flex flex-col gap-2.5 p-5 overflow-hidden"
-            style={{
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-              background: t.bg,
-              border: `1px solid ${t.border}`,
-              boxShadow: `0 30px 60px -20px ${t.glow}, inset 0 1px 0 rgba(255,255,255,0.12)`,
-            }}
-          >
-            {/* glossy + dots + watermark */}
-            <div className="absolute inset-x-0 top-0 h-1/2 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02) 55%, transparent)' }} />
-            <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
-            <span className="absolute -right-3 -bottom-8 text-[110px] leading-none pointer-events-none select-none" style={{ color: 'rgba(255,255,255,0.035)', fontFamily: "'Amiri', serif" }}>۞</span>
-            <div className="absolute top-0 inset-x-6 h-px" style={{ background: `linear-gradient(90deg, transparent, ${t.chip}, transparent)`, opacity: 0.55 }} />
+          {ayah.translit}
+        </p>
 
-            {/* medallion */}
-            <div className="absolute top-3.5 right-3.5 w-7 h-7 flex items-center justify-center">
-              <span className="absolute inset-0 rotate-45 rounded-[5px]" style={{ border: `1px solid ${t.chip}`, opacity: 0.5 }} />
-              <span className="absolute inset-0 rounded-[5px]" style={{ border: `1px solid ${t.chip}`, opacity: 0.5 }} />
-              <span className="relative text-[11px] leading-none" style={{ color: t.chip, fontFamily: "'Amiri', serif" }}>۞</span>
-            </div>
+        {/* ⭐ Bangla meaning — premium serif */}
+        <p
+          className="bn text-center px-2"
+          style={{
+            fontFamily: "'Tiro Bangla', 'Noto Serif Bengali', 'Anek Bangla', serif",
+            fontSize: '11px',
+            lineHeight: 1.7,
+            color: 'rgba(255,255,255,0.88)',
+            textShadow: '0 1px 2px rgba(0,0,0,0.4)',
+          }}
+        >
+          "{ayah.bangla}"
+        </p>
 
-            {/* rarity */}
-            <div className="relative flex items-center justify-center gap-2 pr-8">
-              <span className="h-px w-6 sm:w-8" style={{ background: `linear-gradient(90deg, transparent, ${t.chip})`, opacity: 0.6 }} />
-              <span dir="rtl" className="text-[13px]" style={{ fontFamily: "'Amiri', serif", color: t.chip }}>{t.ar}</span>
-              <span className="rotate-45 block w-1 h-1 shrink-0" style={{ background: t.chip }} />
-              <span className="text-[7px] font-black tracking-[0.25em]" style={{ color: t.chip, opacity: 0.85 }}>{t.latin}</span>
-              <span className="h-px w-6 sm:w-8" style={{ background: `linear-gradient(90deg, ${t.chip}, transparent)`, opacity: 0.6 }} />
-            </div>
+        {/* divider ornament */}
+        <div className="flex items-center gap-2 my-1.5">
+          <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${t.chip}, transparent)`, opacity: 0.3 }} />
+          <span style={{ color: t.chip, fontSize: '9px', fontFamily: "'Amiri', serif", opacity: 0.8 }}>۞</span>
+          <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${t.chip}, transparent, ${t.chip})`, opacity: 0.3 }} />
+        </div>
 
-            {/* arabic */}
-            <div className="relative flex-1 flex flex-col items-center justify-center py-1">
-              <p dir="rtl" className="text-center leading-loose px-1" style={{ fontFamily: "'Amiri', serif", color: '#F8FAFC', fontSize: 'clamp(17px, 4.6vw, 20px)', textShadow: `0 0 22px ${t.glow}` }}>
-                <span style={{ color: t.chip, fontSize: '18px', opacity: 0.7 }}>﴿</span> {ayah.arabic}{' '}
-                <span style={{ color: t.chip, fontSize: '18px', opacity: 0.7 }}>﴾</span>
-              </p>
-            </div>
-
-            {/* bangla meaning */}
-            <p className="relative text-center px-1" style={{ ...BN, fontSize: '12.5px', fontWeight: 500, lineHeight: 1.75, color: 'rgba(255,255,255,0.9)', textShadow: '0 1px 2px rgba(0,0,0,0.45)' }}>
-              "{ayah.bangla}"
+        {/* bottom row */}
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[9px] font-bold bn truncate" style={{ color: t.chip }}>{ayah.reference}</p>
+            <p className="text-[8px] text-white/45 font-mono mt-0.5">
+              #{String(c.id).padStart(3, '0')} · {new Date(c.claimedAt).toLocaleDateString('bn-BD')}
             </p>
-
-            {/* divider */}
-            <div className="flex items-center gap-2 my-0.5">
-              <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${t.chip}, transparent)`, opacity: 0.3 }} />
-              <span style={{ color: t.chip, fontSize: '9px', fontFamily: "'Amiri', serif", opacity: 0.8 }}>۞</span>
-              <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${t.chip}, transparent, ${t.chip})`, opacity: 0.3 }} />
-            </div>
-
-            {/* source + tap hint */}
-            <div className="relative flex items-end justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold truncate" style={{ ...BN, color: t.chip }}>📖 {ayah.reference}</p>
-                <p className="text-[8px] text-white/45 font-mono mt-0.5">#{String(c.id).padStart(3, '0')}</p>
-              </div>
-              <span className="text-[7px] font-black tracking-[0.15em] text-white/40 shrink-0 flex items-center gap-1">
-                TAP TO FLIP ↻
-              </span>
-            </div>
           </div>
-
-          {/* ═══ BACK FACE — Bengali Pronunciation (উচ্চারণ) ═══ */}
-          <div
-            className="absolute inset-0 rounded-[22px] flex flex-col p-5 overflow-hidden"
-            style={{
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-              transform: 'rotateY(180deg)',
-              background: `linear-gradient(145deg, ${t.bg.match(/#[0-9A-F]{6}/i)?.[0] || '#0A0C12'} 0%, #050609 100%)`,
-              border: `1px solid ${t.border}`,
-              boxShadow: `0 30px 60px -20px ${t.glow}, inset 0 1px 0 rgba(255,255,255,0.12)`,
-            }}
-          >
-            {/* subtle pattern */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.6) 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
-            <span className="absolute -left-3 -top-6 text-[100px] leading-none pointer-events-none select-none opacity-[0.04]" style={{ fontFamily: "'Amiri', serif", color: t.chip }}>۞</span>
-
-            {/* header */}
-            <div className="relative flex items-center justify-center gap-2 mb-3">
-              <span className="h-px w-8" style={{ background: `linear-gradient(90deg, transparent, ${t.chip})` }} />
-              <p className="text-[9px] font-black tracking-[0.3em] uppercase" style={{ color: t.chip }}>
-                বাংলা উচ্চারণ
-              </p>
-              <span className="h-px w-8" style={{ background: `linear-gradient(90deg, ${t.chip}, transparent)` }} />
-            </div>
-
-            {/* transliteration — big & readable */}
-            <div className="relative flex-1 flex items-center justify-center px-2 py-3">
-              <p
-                className="text-center leading-relaxed"
-                style={{
-                  fontFamily: "'Hind Siliguri', sans-serif",
-                  fontSize: 'clamp(13px, 3.8vw, 16px)',
-                  fontWeight: 500,
-                  color: '#F8FAFC',
-                  lineHeight: 1.8,
-                  letterSpacing: '0.01em',
-                  textShadow: `0 0 18px ${t.glow}`,
-                }}
-              >
-                {ayah.translit}
-              </p>
-            </div>
-
-            {/* divider */}
-            <div className="flex items-center gap-2 my-2">
-              <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${t.chip}, transparent)`, opacity: 0.4 }} />
-              <span style={{ color: t.chip, fontSize: '10px', fontFamily: "'Amiri', serif" }}>۞</span>
-              <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${t.chip}, transparent, ${t.chip})`, opacity: 0.4 }} />
-            </div>
-
-            {/* reference + tap back */}
-            <div className="relative flex items-end justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold truncate" style={{ ...BN, color: t.chip }}>📖 {ayah.reference}</p>
-                <p className="text-[8px] font-bold tracking-widest uppercase mt-1" style={{ ...BN, color: '#94A3B8' }}>
-                  {t.bn} · #{String(c.id).padStart(3, '0')}
-                </p>
-              </div>
-              <span className="text-[7px] font-black tracking-[0.15em] text-white/50 shrink-0 flex items-center gap-1">
-                ↺ TAP BACK
-              </span>
-            </div>
-          </div>
+          <span className="text-[7px] font-black tracking-[0.2em] text-white/35 shrink-0">CAMPUS 6.0 VAULT</span>
         </div>
       </div>
     </div>
   );
 };
 
-/* ─── Locked Slot ─── */
+/* ─── Locked Slot (mysterious) ─── */
 const LockedCard: React.FC<{ id: number; i: number }> = ({ id, i }) => (
   <div className="vault-enter mx-auto w-full max-w-85" style={{ animationDelay: `${i * 0.05}s` }}>
     <div
-      className="relative overflow-hidden rounded-[22px] p-4 flex flex-col items-center justify-center gap-3 min-h-[250px] sm:aspect-[1.45] sm:min-h-0"
+      className="relative overflow-hidden rounded-[22px] p-4 flex flex-col items-center justify-center gap-3"
       style={{
+        aspectRatio: '1.45',
         background: 'linear-gradient(160deg,#0D1015 0%,#0A0C10 100%)',
         border: '1px dashed rgba(255,255,255,0.1)',
       }}
     >
+      {/* ornamental frame */}
       <div className="absolute inset-3 rounded-lg border pointer-events-none" style={{ borderColor: 'rgba(255,255,255,0.05)' }} />
       <span className="text-4xl opacity-10" style={{ fontFamily: "'Amiri', serif", color: '#FBBF24' }}>۞</span>
       <Lock className="w-5 h-5 text-text-muted" />
-      <p className="text-[9px] font-bold text-text-muted" style={BN}>অসংগ্রহীত</p>
+      <p className="text-[9px] font-bold bn text-text-muted">অসংগ্রহীত</p>
       <p className="text-[8px] font-mono text-text-muted/50">#{String(id).padStart(3, '0')}</p>
     </div>
   </div>
@@ -258,16 +260,17 @@ export const AyahCollectionVault: React.FC<{ open: boolean; onClose: () => void 
         @keyframes glowPulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
         .vault-enter { animation: vaultEnter .7s cubic-bezier(.16,1,.3,1) both; }
         .vault-float { animation: vaultEnter .7s cubic-bezier(.16,1,.3,1) both, vaultFloat 7s ease-in-out infinite; }
+        .perspective { perspective: 1000px; }
       `}</style>
 
-      {/* particles */}
+      {/* floating particles (atmospheric) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {Array.from({ length: 24 }).map((_, i) => (
           <Particle key={i} i={i} />
         ))}
       </div>
 
-      {/* sticky header */}
+      {/* ── sticky header ── */}
       <div
         className="sticky top-0 z-20 flex items-center justify-between px-5 py-3.5 backdrop-blur-xl"
         style={{ background: 'rgba(7,9,16,0.82)', borderBottom: '1px solid rgba(251,191,36,0.18)' }}
@@ -278,7 +281,7 @@ export const AyahCollectionVault: React.FC<{ open: boolean; onClose: () => void 
           </div>
           <div>
             <p className="text-[8px] tracking-[0.3em] uppercase font-black" style={{ color: '#FBBF24' }}>Private Vault</p>
-            <h2 className="text-sm font-bold -mt-0.5" style={{ ...BN, color: '#F8FAFC' }}>
+            <h2 className="text-sm font-black bn -mt-0.5" style={{ color: '#F8FAFC', fontFamily: "'Tiro Bangla', serif" }}>
               আয়াত সংগ্রহশালা
             </h2>
           </div>
@@ -295,18 +298,23 @@ export const AyahCollectionVault: React.FC<{ open: boolean; onClose: () => void 
         </button>
       </div>
 
-      {/* hero */}
+      {/* ── hero section ── */}
       <div className="relative px-5 pt-8 pb-4 max-w-5xl mx-auto z-10">
         <div className="flex items-center gap-2 mb-2">
           <span className="h-px w-8" style={{ background: 'linear-gradient(90deg, transparent, #FBBF24)' }} />
-          <p className="text-[9px] tracking-[0.35em] uppercase font-black" style={{ color: '#FBBF24' }}>Personal Collection</p>
+          <p className="text-[9px] tracking-[0.35em] uppercase font-black" style={{ color: '#FBBF24' }}>
+            Personal Collection
+          </p>
           <span className="h-px w-8" style={{ background: 'linear-gradient(90deg, #FBBF24, transparent)' }} />
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-bold" style={{ ...BN, color: '#F8FAFC', lineHeight: 1.25 }}>
+        <h1
+          className="text-3xl sm:text-4xl font-black bn-serif"
+          style={{ color: '#F8FAFC', fontFamily: "'Tiro Bangla', serif", lineHeight: 1.2 }}
+        >
           তোমার আধ্যাত্মিক <br />সংগ্রহশালা
         </h1>
-        <p className="text-[11px] mt-2 max-w-lg" style={{ ...BN, color: '#94A3B8', lineHeight: 1.7 }}>
+        <p className="text-[11px] bn mt-2 max-w-lg" style={{ color: '#94A3B8', lineHeight: 1.7 }}>
           প্রতিদিন login করে আজকের আয়াত সংগ্রহ করো — বিরল <span style={{ color: '#FBBF24' }}>নূরানী</span> ও পবিত্র <span style={{ color: '#C084FC' }}>কুদসী</span> tier unlock করো।
         </p>
 
@@ -324,7 +332,7 @@ export const AyahCollectionVault: React.FC<{ open: boolean; onClose: () => void 
             >
               <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6) 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
               <p className="text-2xl sm:text-3xl font-black font-mono relative" style={{ color: s.color, textShadow: `0 0 20px ${s.color}33` }}>{s.value}</p>
-              <p className="text-[9px] font-bold mt-0.5 relative" style={{ ...BN, color: '#64748B' }}>{s.label}</p>
+              <p className="text-[9px] font-bold bn mt-0.5 relative" style={{ color: '#64748B' }}>{s.label}</p>
               <p className="text-[8px] font-mono tracking-[0.2em] uppercase relative" style={{ color: s.color, opacity: 0.7 }}>{s.sub}</p>
             </div>
           ))}
@@ -351,7 +359,7 @@ export const AyahCollectionVault: React.FC<{ open: boolean; onClose: () => void 
         </div>
       </div>
 
-      {/* rarity legend */}
+      {/* ── rarity legend ── */}
       <div className="px-5 py-3 max-w-5xl mx-auto">
         <div className="flex flex-wrap items-center justify-center gap-3 text-[9px]">
           {[
@@ -363,13 +371,13 @@ export const AyahCollectionVault: React.FC<{ open: boolean; onClose: () => void 
               <span dir="rtl" style={{ fontFamily: "'Amiri', serif", color: r.chip, fontSize: '11px' }}>{r.ar}</span>
               <span style={{ color: r.chip, opacity: 0.8 }}>·</span>
               <span className="font-bold tracking-wider" style={{ color: r.chip }}>{r.label}</span>
-              <span className="text-text-muted" style={BN}>({r.bn})</span>
+              <span className="bn text-text-muted">({r.bn})</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* cards grid */}
+      {/* ── cards grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 px-5 pb-32 max-w-6xl mx-auto relative z-10">
         {sorted.map((c, i) => (
           <VaultCard key={c.id} c={c} i={i} />
@@ -379,9 +387,9 @@ export const AyahCollectionVault: React.FC<{ open: boolean; onClose: () => void 
         ))}
       </div>
 
-      {/* footer wisdom */}
+      {/* ── footer wisdom ── */}
       <div className="fixed bottom-0 inset-x-0 px-5 py-4 pointer-events-none" style={{ background: 'linear-gradient(180deg, transparent, rgba(7,9,16,0.95))' }}>
-        <p className="text-center text-[9px] italic" style={{ ...BN, color: 'rgba(251,191,36,0.7)' }}>
+        <p className="text-center text-[9px] bn-serif" style={{ color: 'rgba(251,191,36,0.7)', fontFamily: "'Tiro Bangla', serif", fontStyle: 'italic' }}>
           "যে আল্লাহর স্মরণে অন্তর প্রশান্ত হয়" — সূরা আর-রা'দ ১৩:২৮
         </p>
       </div>

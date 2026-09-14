@@ -31,8 +31,8 @@ const C = {
   green: '#10B981',
 };
 
-const FONT_DISPLAY = "'Lexend', 'Noto Serif Bengali', sans-serif";
-const FONT_BODY = "'Plus Jakarta Sans', 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
+const FONT_DISPLAY = "'Lexend', sans-serif";
+const FONT_BODY = "'Plus Jakarta Sans', sans-serif";
 const FONT_MONO = "'JetBrains Mono', monospace";
 
 /** ⭐ Live freshness window (stale 'focus' status ignore) */

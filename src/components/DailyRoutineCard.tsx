@@ -2,16 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { RoutineDay, ClassSession } from '../types';
 import { useClassLinks } from '../utils/useClassLinks';
 import { getClassWindow } from '../utils/classExamWindow';
-import { Video, Timer as TimerIcon, BookOpen, Radio, Calendar, CheckCircle2, Sparkles } from 'lucide-react';
+import { Video, Timer as TimerIcon, BookOpen, Radio, Calendar } from 'lucide-react';
 
 const SUBJECT_COLORS: Record<string, string> = {
   Physics: '#38BDF8', Chemistry: '#F472B6', 'Higher Mathematics': '#A78BFA',
   Biology: '#34D399', English: '#FBBF24', Bangla: '#F87171', ICT: '#22D3EE', Other: '#94A3B8',
 };
-
-const BN: React.CSSProperties = { fontFamily: "'Hind Siliguri', 'Anek Bangla', sans-serif" };
-const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
-const ORBITRON: React.CSSProperties = { fontFamily: "'Orbitron', 'Lexend', sans-serif" };
 
 interface DailyRoutineCardProps {
   routine: RoutineDay;
@@ -36,15 +32,14 @@ export const DailyRoutineCard: React.FC<DailyRoutineCardProps> = ({ routine, dat
 
   const sessions = routine?.sessions || [];
   const nextUp = sessions.find((s) => getClassWindow(s, dateKey).status === 'upcoming');
+  const nextWin = nextUp ? getClassWindow(nextUp, dateKey) : null;
   const liveSession = sessions.find((s) => getClassWindow(s, dateKey).status === 'live');
   const endedCount = sessions.filter((s) => getClassWindow(s, dateKey).status === 'ended').length;
 
   const isLive = !!liveSession;
   const allDone = sessions.length > 0 && endedCount === sessions.length;
-  const progressPct = sessions.length > 0 ? (endedCount / sessions.length) * 100 : 0;
 
   const liveWin = liveSession ? getClassWindow(liveSession, dateKey) : null;
-  const nextWin = nextUp ? getClassWindow(nextUp, dateKey) : null;
   const targetWin = isLive ? liveWin : nextWin;
   const targetSec = targetWin
     ? Math.max(0, Math.round((isLive ? targetWin!.minutesRemaining : targetWin!.minutesUntilStart) * 60))
@@ -54,23 +49,25 @@ export const DailyRoutineCard: React.FC<DailyRoutineCardProps> = ({ routine, dat
   const ss = pad(targetSec % 60);
 
   const accent = isLive ? '#F87171' : allDone ? '#6EE7B7' : '#FBBF24';
+  const accentLabel = isLive ? 'LIVE' : allDone ? 'COMPLETE' : 'UPCOMING';
 
-  /* ─── Rest day ─── */
   if (!routine || routine.isRestDay || sessions.length === 0) {
     return (
       <article
-        className="relative rounded-2xl p-8 text-center overflow-hidden"
-        style={{ background: '#0A0C12', border: '1px solid rgba(255,255,255,0.07)' }}
+        className="relative rounded-3xl p-8 text-center"
+        style={{
+          background: '#0A0C12',
+          border: '1px solid rgba(255,255,255,0.06)',
+          backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(59,130,246,0.04), transparent 50%)',
+        }}
       >
-        <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-40 rounded-full blur-3xl pointer-events-none" style={{ background: 'rgba(59,130,246,0.05)' }} />
-        <div
-          className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-        >
-          <BookOpen className="w-6 h-6" style={{ color: '#64748B' }} />
-        </div>
-        <h3 className="text-xl font-bold mb-2" style={{ ...BN, color: '#F8FAFC' }}>বিশ্রামের দিন</h3>
-        <p className="text-sm max-w-xs mx-auto" style={{ ...BN, color: '#94A3B8', lineHeight: 1.6 }}>
+        <p className="text-[10px] font-black tracking-[0.3em] uppercase mb-3" style={{ color: '#64748B', fontFamily: "'JetBrains Mono', monospace" }}>
+          § Today
+        </p>
+        <h3 className="text-2xl font-black bn mb-2" style={{ color: '#F8FAFC', fontFamily: "'Anek Bangla', sans-serif" }}>
+          বিশ্রামের দিন
+        </h3>
+        <p className="text-sm bn" style={{ color: '#94A3B8', fontFamily: "'Anek Bangla', sans-serif" }}>
           আজ কোনো ক্লাস নেই — নিজের মতো পড়ুন বা বিশ্রাম নিন
         </p>
       </article>
@@ -79,153 +76,140 @@ export const DailyRoutineCard: React.FC<DailyRoutineCardProps> = ({ routine, dat
 
   return (
     <article
-      className="relative rounded-2xl overflow-hidden"
-      style={{ background: '#0A0C12', border: '1px solid rgba(255,255,255,0.08)' }}
+      className="relative rounded-3xl overflow-hidden"
+      style={{
+        background: '#0A0C12',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backgroundImage:
+          'radial-gradient(circle at 100% 0%, rgba(251,191,36,0.04), transparent 50%), radial-gradient(circle at 0% 100%, rgba(59,130,246,0.03), transparent 50%)',
+      }}
     >
-      {/* ═══ HEADER ═══ */}
-      <header className="px-6 py-5 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="flex items-center gap-3 min-w-0">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-          >
-            <Calendar className="w-4 h-4" style={{ color: '#CBD5E1' }} />
+      {/* ═══ TOP: Section label + meta ═══ */}
+      <header className="px-6 sm:px-8 pt-6 sm:pt-8 pb-5 flex items-start justify-between gap-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] font-black tracking-[0.3em] uppercase" style={{ color: '#64748B', fontFamily: "'JetBrains Mono', monospace" }}>
+              § Today · Classes
+            </span>
+            <span className="h-px flex-1 max-w-[40px]" style={{ background: 'rgba(255,255,255,0.12)' }} />
           </div>
-          <div className="min-w-0">
-            <h2 className="text-[17px] font-bold leading-tight truncate" style={{ ...BN, color: '#F8FAFC' }}>
-              আজকের ক্লাস রুটিন
-            </h2>
-            <p className="text-[10px] font-black tracking-[0.22em] uppercase mt-0.5" style={{ ...MONO, color: '#64748B' }}>
-              {dateKey} · {sessions.length} SESSIONS
-            </p>
-          </div>
+          <h2 className="text-2xl sm:text-[28px] font-black bn leading-tight" style={{ color: '#F8FAFC', fontFamily: "'Anek Bangla', sans-serif", letterSpacing: '-0.01em' }}>
+            আজকের ক্লাস
+          </h2>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: accent, boxShadow: `0 0 8px ${accent}`, animation: isLive ? 'routinePulse 1.4s infinite' : 'none' }}
-          />
-          <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ ...MONO, color: accent }}>
-            {isLive ? 'LIVE' : allDone ? 'DONE' : 'UPCOMING'}
-          </span>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent, boxShadow: `0 0 8px ${accent}`, animation: isLive ? 'routinePulse 1.5s ease-in-out infinite' : 'none' }} />
+            <span className="text-[9px] font-black tracking-[0.25em] uppercase" style={{ color: accent, fontFamily: "'JetBrains Mono', monospace" }}>
+              {accentLabel}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-1">
+            <Calendar className="w-3 h-3" style={{ color: '#64748B' }} />
+            <span className="text-[10px] font-mono" style={{ color: '#64748B' }}>{dateKey}</span>
+          </div>
         </div>
       </header>
 
-      {/* ═══ HERO COUNTDOWN ═══ */}
-      {targetWin && (
-        <div
-          className="relative px-6 py-6 overflow-hidden"
-          style={{
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            background: `radial-gradient(ellipse at top right, ${accent}08, transparent 60%), radial-gradient(ellipse at bottom left, ${accent}05, transparent 60%)`,
-          }}
-        >
-          {/* Glow accent */}
-          <div
-            className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl pointer-events-none"
-            style={{ background: `${accent}10` }}
-          />
+      {/* ═══ TOPIC + COUNTDOWN HERO ═══ */}
+      <section className="px-6 sm:px-8 py-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+          {/* Topic (left) */}
+          <div className="lg:col-span-3 min-w-0">
+            <p className="text-[9px] font-black tracking-[0.25em] uppercase mb-2" style={{ color: '#64748B', fontFamily: "'JetBrains Mono', monospace" }}>
+              Next Focus
+            </p>
+            <h3
+              className="text-xl sm:text-2xl font-bold bn leading-snug"
+              style={{
+                color: '#F1F5F9',
+                fontFamily: "'Anek Bangla', sans-serif",
+                letterSpacing: '-0.005em',
+              }}
+            >
+              {routine.topicRaw}
+            </h3>
 
-          <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-            {/* Left: session info */}
-            <div className="min-w-0 flex-1">
-              <p
-                className="flex items-center gap-1.5 text-[9px] font-black tracking-[0.22em] uppercase mb-2"
-                style={{ ...MONO, color: accent }}
-              >
-                {isLive ? (
-                  <><Radio className="w-3 h-3" /> LIVE · ENDS IN</>
-                ) : (
-                  <><Sparkles className="w-3 h-3" /> NEXT UP</>
-                )}
-              </p>
-              <h3
-                className="text-lg sm:text-xl font-bold leading-snug truncate mb-1.5"
-                style={{ ...BN, color: '#F1F5F9' }}
-              >
-                {isLive ? liveSession!.topic : nextUp!.topic}
-              </h3>
-              <div className="flex items-center gap-3 text-[11px]" style={{ ...MONO, color: '#64748B' }}>
-                <span>{isLive ? liveSession!.time : nextUp!.time}</span>
-                <span style={{ color: '#334155' }}>·</span>
-                <span className="flex items-center gap-1.5" style={{ ...BN, fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: SUBJECT_COLORS[isLive ? liveSession!.subject : nextUp!.subject] || '#94A3B8' }}
-                  />
-                  {isLive ? liveSession!.subject : nextUp!.subject}
-                </span>
-              </div>
-            </div>
-
-            {/* Right: editorial flip timer */}
-            <div className="flex items-end gap-1.5 shrink-0">
-              {[{ v: hh, l: 'HRS' }, { v: mm, l: 'MIN' }, { v: ss, l: 'SEC' }].map((b, i) => (
-                <React.Fragment key={b.l}>
-                  {i > 0 && (
-                    <span
-                      className="font-black text-xl pb-3"
-                      style={{ ...ORBITRON, color: accent, opacity: 0.5 }}
-                    >
-                      :
-                    </span>
-                  )}
-                  <div className="flex flex-col items-center">
-                    <div
-                      className="relative px-3 py-2.5 rounded-lg overflow-hidden"
-                      style={{
-                        background: 'rgba(0,0,0,0.6)',
-                        border: `1px solid ${accent}35`,
-                        boxShadow: `inset 0 0 16px ${accent}12, 0 0 16px ${accent}08`,
-                      }}
-                    >
-                      {/* Flip hairline */}
-                      <div className="absolute inset-x-0 top-1/2 h-px" style={{ background: `${accent}30` }} />
-                      <span
-                        className="relative text-2xl sm:text-[28px] font-black tabular-nums leading-none"
-                        style={{ ...ORBITRON, color: accent, letterSpacing: '-0.02em' }}
-                      >
-                        {b.v}
-                      </span>
-                    </div>
-                    <span
-                      className="text-[8px] font-black tracking-[0.15em] mt-1.5"
-                      style={{ ...MONO, color: '#475569' }}
-                    >
-                      {b.l}
-                    </span>
-                  </div>
-                </React.Fragment>
+            {/* Stats row */}
+            <div className="flex items-center gap-4 mt-4">
+              {[
+                { label: 'Classes', value: String(sessions.length) },
+                { label: 'Done', value: String(endedCount) },
+                { label: 'Next', value: nextUp ? nextUp.time : '—' },
+              ].map((s, i) => (
+                <div key={s.label} className="flex items-center gap-2" style={i > 0 ? { paddingLeft: 16, borderLeft: '1px solid rgba(255,255,255,0.08)' } : undefined}>
+                  <span className="text-sm font-black font-mono" style={{ color: '#F8FAFC' }}>{s.value}</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: '#64748B' }}>{s.label}</span>
+                </div>
               ))}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* ═══ PROGRESS BAR ═══ */}
-      <div className="px-6 py-3 flex items-center gap-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="flex-1 h-px relative overflow-visible" style={{ background: 'rgba(255,255,255,0.06)' }}>
-          <div
-            className="absolute top-0 bottom-0 left-0 transition-all duration-1000 ease-out"
-            style={{
-              width: `${progressPct}%`,
-              background: `linear-gradient(90deg, ${accent}, ${accent}80)`,
-              boxShadow: `0 0 8px ${accent}50`,
-            }}
-          />
+          {/* Countdown (right) */}
+          {targetWin && (
+            <div className="lg:col-span-2">
+              <div
+                className="relative rounded-2xl p-5"
+                style={{
+                  background: isLive ? 'rgba(239,68,68,0.06)' : 'rgba(251,191,36,0.04)',
+                  border: `1px solid ${accent}30`,
+                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.05)`,
+                }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    {isLive && <Radio className="w-3.5 h-3.5" style={{ color: accent }} />}
+                    <p className="text-[9px] font-black tracking-[0.25em] uppercase" style={{ color: accent, fontFamily: "'JetBrains Mono', monospace" }}>
+                      {isLive ? 'Ends In' : 'Starts In'}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-[11px] font-semibold bn mb-3 truncate" style={{ color: '#CBD5E1' }}>
+                  {isLive ? liveSession!.topic : nextUp!.topic}
+                </p>
+
+                {/* Time display — big mono */}
+                <div className="flex items-baseline gap-1 font-mono font-black" style={{ color: '#F8FAFC' }}>
+                  <span className="text-3xl sm:text-4xl tabular-nums tracking-tight" style={{ letterSpacing: '-0.02em' }}>
+                    {hh}:{mm}
+                  </span>
+                  <span className="text-lg tabular-nums" style={{ color: accent }}>.{ss}</span>
+                </div>
+
+                <p className="text-[9px] font-bold uppercase tracking-wider mt-2" style={{ color: '#64748B' }}>
+                  {isLive ? liveSession!.time : nextUp!.time} · {isLive ? liveSession!.subject : nextUp!.subject}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-        <span
-          className="text-[10px] font-black tabular-nums shrink-0"
-          style={{ ...MONO, color: '#94A3B8' }}
-        >
-          <span style={{ color: accent }}>{endedCount}</span>
-          <span style={{ color: '#334155' }}> / </span>
-          <span>{sessions.length}</span>
-        </span>
+      </section>
+
+      {/* ═══ PROGRESS HAIRLINE ═══ */}
+      <div className="px-6 sm:px-8 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center gap-4">
+          <span className="text-[9px] font-black tracking-[0.25em] uppercase shrink-0" style={{ color: '#64748B', fontFamily: "'JetBrains Mono', monospace" }}>
+            Progress
+          </span>
+          <div className="flex-1 h-px relative" style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <div
+              className="absolute inset-y-0 left-0 transition-all duration-1000"
+              style={{
+                width: `${(endedCount / sessions.length) * 100}%`,
+                background: `linear-gradient(90deg, ${accent}, transparent)`,
+                boxShadow: `0 0 12px ${accent}50`,
+              }}
+            />
+          </div>
+          <span className="text-[11px] font-black font-mono tabular-nums shrink-0" style={{ color: accent }}>
+            {endedCount}/{sessions.length}
+          </span>
+        </div>
       </div>
 
-      {/* ═══ SESSION TIMELINE ═══ */}
+      {/* ═══ SESSION LIST — editorial rows ═══ */}
       <div>
         {sessions.map((s, i) => {
           const color = SUBJECT_COLORS[s.subject] || '#94A3B8';
@@ -234,104 +218,99 @@ export const DailyRoutineCard: React.FC<DailyRoutineCardProps> = ({ routine, dat
           const isSessionLive = win.status === 'live';
           const isEnded = win.status === 'ended';
           const isNext = !isSessionLive && !isEnded && s === nextUp;
-          const isHighlighted = isSessionLive || isNext;
 
           return (
             <div
               key={s.id}
-              className="group relative px-6 py-4 transition-all hover:bg-white/[0.02]"
+              className="group relative px-6 sm:px-8 py-5 transition-all hover:bg-white/[0.015]"
               style={{
-                borderBottom: i < sessions.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                opacity: isEnded ? 0.4 : 1,
-                background: isSessionLive ? `${accent}04` : undefined,
+                borderBottom: i < sessions.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                opacity: isEnded ? 0.45 : 1,
               }}
             >
-              {/* Left accent spine — status indicator */}
-              {isHighlighted && (
+              {/* Active indicator bar (left edge) */}
+              {(isSessionLive || isNext) && (
                 <div
-                  className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r"
-                  style={{ background: accent, boxShadow: `0 0 8px ${accent}80` }}
+                  className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r"
+                  style={{
+                    background: accent,
+                    boxShadow: `0 0 10px ${accent}`,
+                  }}
                 />
               )}
 
-              <div className="flex items-center gap-4">
-                {/* Time + subject dot */}
-                <div className="flex items-center gap-3 shrink-0" style={{ width: 90 }}>
+              <div className="grid grid-cols-[auto_1fr_auto] gap-4 sm:gap-6 items-center">
+                {/* Time column */}
+                <div className="flex flex-col items-center" style={{ width: 56 }}>
                   <span
-                    className="text-[13px] font-black tabular-nums"
+                    className="text-[14px] font-black font-mono tabular-nums"
                     style={{
-                      ...MONO,
                       color: isSessionLive ? accent : isEnded ? '#475569' : '#F8FAFC',
-                      textShadow: isSessionLive ? `0 0 10px ${accent}60` : 'none',
-                      letterSpacing: '-0.01em',
+                      textShadow: isSessionLive ? `0 0 12px ${accent}60` : 'none',
                     }}
                   >
                     {s.time}
                   </span>
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{
-                      background: isEnded ? '#334155' : color,
-                      boxShadow: isSessionLive ? `0 0 6px ${color}` : 'none',
-                    }}
-                  />
+                  <span className="text-[8px] font-black tracking-wider uppercase mt-0.5" style={{ color: '#475569' }}>
+                    {isSessionLive ? 'NOW' : isEnded ? 'DONE' : isNext ? 'NEXT' : 'WAIT'}
+                  </span>
                 </div>
 
-                {/* Content — topic + subject label (single line) */}
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-[13px] font-semibold truncate leading-tight ${isEnded ? 'line-through' : ''}`}
+                {/* Content */}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span
+                      className="text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider"
+                      style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}
+                    >
+                      {s.subject}
+                    </span>
+                    {isSessionLive && (
+                      <span className="flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.12)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.3)' }}>
+                        <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+                        LIVE
+                      </span>
+                    )}
+                    {isNext && (
+                      <span className="text-[9px] font-black px-2 py-0.5 rounded bn" style={{ background: 'rgba(251,191,36,0.1)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.25)' }}>
+                        পরবর্তী
+                      </span>
+                    )}
+                  </div>
+                  <h4
+                    className={`text-[14px] sm:text-[15px] font-bold bn leading-tight ${isEnded ? 'line-through' : ''}`}
                     style={{
-                      ...BN,
-                      color: isEnded ? '#475569' : isSessionLive ? '#F8FAFC' : '#E2E8F0',
-                      textDecorationColor: isEnded ? '#334155' : undefined,
+                      color: isEnded ? '#475569' : '#F1F5F9',
+                      fontFamily: "'Anek Bangla', sans-serif",
                     }}
                   >
                     {s.topic}
-                  </p>
-                  <p
-                    className="text-[9px] font-black tracking-[0.15em] uppercase mt-1"
-                    style={{ ...MONO, color: isEnded ? '#334155' : color, opacity: 0.9 }}
-                  >
-                    {s.subject}
-                  </p>
+                  </h4>
                 </div>
 
-                {/* Actions — subtle icon buttons */}
-                <div className="flex items-center gap-1.5 shrink-0">
+                {/* Actions */}
+                <div className="flex items-center gap-2 shrink-0">
                   {link && !isEnded && (
                     <button
                       onClick={() => window.open(link.url, '_blank')}
-                      className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-extrabold transition-all hover:scale-[1.03] active:scale-95"
+                      className="group/btn relative overflow-hidden px-4 py-2 rounded-xl text-[11px] font-extrabold bn flex items-center gap-1.5 transition-all hover:scale-[1.03] active:scale-[0.97]"
                       style={{
-                        ...BN,
-                        fontSize: 10,
-                        background: isSessionLive ? accent : 'rgba(16,185,129,0.12)',
-                        color: isSessionLive ? '#fff' : '#34D399',
-                        border: `1px solid ${isSessionLive ? accent : 'rgba(16,185,129,0.3)'}`,
-                        boxShadow: isSessionLive ? `0 0 12px ${accent}40` : 'none',
+                        background: 'linear-gradient(135deg,#10B981,#059669)',
+                        color: '#fff',
+                        boxShadow: '0 4px 14px rgba(16,185,129,0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
                       }}
                     >
-                      <Video className="w-3 h-3" />
-                      {isSessionLive ? 'Join' : 'ক্লাস'}
+                      <Video className="w-3.5 h-3.5" /> ক্লাস
                     </button>
-                  )}
-                  {isEnded && (
-                    <div
-                      className="flex items-center justify-center w-7 h-7 rounded-lg"
-                      style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#34D399' }} />
-                    </div>
                   )}
                   {onStartFocusTimer && !isEnded && (
                     <button
                       onClick={() => onStartFocusTimer(s)}
-                      className="flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105 active:scale-95"
-                      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+                      className="p-2 rounded-xl transition-all hover:scale-105 active:scale-95"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#FBBF24' }}
                       title="ফোকাস টাইমার"
                     >
-                      <TimerIcon className="w-3.5 h-3.5" style={{ color: '#FBBF24' }} />
+                      <TimerIcon className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -342,28 +321,24 @@ export const DailyRoutineCard: React.FC<DailyRoutineCardProps> = ({ routine, dat
       </div>
 
       {/* ═══ FOOTER ═══ */}
-      <footer
-        className="px-6 py-3 flex items-center justify-between"
-        style={{ background: 'rgba(0,0,0,0.3)', borderTop: '1px solid rgba(255,255,255,0.04)' }}
-      >
-        <span className="text-[10px] font-semibold flex items-center gap-1.5" style={{ ...BN, color: '#64748B' }}>
-          {allDone ? (
-            <>🎉 সব ক্লাস সম্পন্ন — দারুণ!</>
-          ) : isLive ? (
-            <>ক্লাস চলছে — ফোকাস রাখুন</>
-          ) : (
-            <>{sessions.length - endedCount} টি ক্লাস বাকি</>
-          )}
-        </span>
-        <span className="text-[9px] font-black tabular-nums" style={{ ...MONO, color: '#334155' }}>
-          {Math.round(progressPct)}% COMPLETE
-        </span>
-      </footer>
+      {sessions.length > 0 && (
+        <footer className="px-6 sm:px-8 py-4 flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-3.5 h-3.5" style={{ color: '#64748B' }} />
+            <span className="text-[10px] font-bold bn" style={{ color: '#64748B' }}>
+              {allDone ? 'সব ক্লাস সম্পন্ন — দারুণ!' : isLive ? 'ক্লাস চলছে — ফোকাস রাখুন' : `${sessions.length - endedCount} টি ক্লাস বাকি`}
+            </span>
+          </div>
+          <span className="text-[9px] font-mono" style={{ color: '#475569' }}>
+            {dateKey}
+          </span>
+        </footer>
+      )}
 
       <style>{`
         @keyframes routinePulse {
           0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.85); }
+          50% { opacity: 0.5; transform: scale(0.9); }
         }
       `}</style>
     </article>

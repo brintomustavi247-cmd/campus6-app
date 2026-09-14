@@ -396,8 +396,8 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
       minSeconds: number,
       explicitDeltaSeconds?: number,
     ): Promise<number> => {
-      // ⭐ 2min Start Mode ও 5min Break = ranked time-এ count হবে না
-      if (modeRef.current === '2min' || modeRef.current === '5min') return 0;
+      // ⭐ 2min Start Mode = warm-up → ranked time-এ count হবে না
+      if (modeRef.current === '2min') return 0;
 
       const totalElapsed =
         explicitDeltaSeconds != null
@@ -761,7 +761,7 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
 
         if (userId) {
           const deltaSeconds = Math.max(0, safeElapsed - flushedSecondsRef.current);
-          const isWarmup = completedMode === '2min' || completedMode === '5min';
+          const isWarmup = completedMode === '2min';
 
           if (deltaSeconds >= 1 && !isWarmup) {
             try {
@@ -1250,7 +1250,7 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
     const syncLivePreview = async () => {
       const userId = effectiveUserIdRef.current;
       if (!userId) return;
-      if (modeRef.current === '2min' || modeRef.current === '5min') return; // ⭐ warm-up/break live rank-এ যাবে না
+      if (modeRef.current === '2min') return; // ⭐ warm-up live rank-এ যাবে না
 
       const totalElapsedSec = calculateElapsedSeconds();
       const uncommittedSec = Math.max(0, totalElapsedSec - flushedSecondsRef.current);

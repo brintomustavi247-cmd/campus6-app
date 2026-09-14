@@ -38,8 +38,6 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
           src={src}
           alt=""
           draggable={false}
-          loading="lazy"
-          decoding="async"
           onError={() => setErr(true)}
           style={{
             width: '100%', height: '100%', objectFit: 'cover',

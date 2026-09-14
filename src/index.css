@@ -1,15 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&family=Lexend:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 @theme {
-  /* ⭐ PREMIUM BANGLA: all fonts loaded via single index.html link.
-     Fallback chains only use fonts that are actually loaded. */
-  --font-bengali: "Hind Siliguri", "Anek Bangla", "Noto Sans Bengali", sans-serif;
-  --font-bengali-serif: "Noto Serif Bengali", "Tiro Bangla", serif;
+  --font-bengali: "Anek Bangla", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  --font-bengali-serif: "Tiro Bangla", "Noto Serif Bengali", serif;
   --font-arabic: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
-  --font-display: "Lexend", "Noto Serif Bengali", "Tiro Bangla", serif;
-  --font-sans: "Plus Jakarta Sans", "Hind Siliguri", "Anek Bangla", sans-serif;
-  --font-body: "Plus Jakarta Sans", "Hind Siliguri", "Anek Bangla", sans-serif;
+  --font-display: "Lexend", "Anek Bangla", "Noto Sans Bengali", sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Anek Bangla", "Noto Sans Bengali", sans-serif;
+  --font-body: "Plus Jakarta Sans", "Anek Bangla", "Noto Sans Bengali", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --font-orbitron: "Orbitron", sans-serif;
   --font-rajdhani: "Rajdhani", sans-serif;
@@ -1501,7 +1500,6 @@ button {
   color: #090C11;
 }
 
-
 .profile-premium::before {
   content: '';
   position: fixed;
@@ -1660,100 +1658,4 @@ button {
 
 .ayah-medallion {
   animation: medallionPulse 4s ease-in-out infinite;
-}
-
-/* ============================================================
-   PREMIUM BANGLA TYPOGRAPHY + PERFORMANCE MODE
-   ============================================================ */
-:root{
-  --font-bn-display:'Noto Serif Bengali','Tiro Bangla',serif;
-  --font-bn-ui:'Hind Siliguri','Anek Bangla',sans-serif;
-}
-
-body{ font-family:var(--font-bn-ui),system-ui,-apple-system,sans-serif; }
-
-/* সব Bangla UI text → clean premium sans */
-.bn,
-[style*="Anek Bangla"]{
-  font-family:var(--font-bn-ui) !important;
-}
-
-/* Headings → editorial premium serif */
-h1.bn, h2.bn, h3.bn, h4.bn,
-h1[style*="Anek Bangla"], h2[style*="Anek Bangla"],
-h3[style*="Anek Bangla"], h4[style*="Anek Bangla"]{
-  font-family:var(--font-bn-display) !important;
-  font-weight:700;
-  letter-spacing:-0.015em;
-}
-
-/* Numbers → tabular mono (jump করবে না) */
-.font-mono, [style*="JetBrains Mono"]{ font-variant-numeric:tabular-nums; }
-
-/* ---------- PERFORMANCE ---------- */
-/* Offscreen sections paint skip করে — scroll-এর আগে render হয় না */
-section, article{
-  content-visibility:auto;
-  contain-intrinsic-size:auto 480px;
-}
-
-/* ⭐ LOW-END DEVICE MODE (perfMode.ts সেট করে) */
-html[data-perf="lite"] *,
-html[data-perf="lite"] *::before,
-html[data-perf="lite"] *::after{
-  backdrop-filter:none !important;
-  -webkit-backdrop-filter:none !important;
-  animation:none !important;
-  transition-duration:.12s !important;
-}
-html[data-perf="lite"] [style*="blur("],
-html[data-perf="lite"] [style*="filter"]{ filter:none !important; }
-html[data-perf="lite"] [style*="box-shadow"]{ box-shadow:none !important; }
-html[data-perf="lite"] .routine-wrap::before,
-html[data-perf="lite"] .exam-wrap::before{ display:none !important; }
-
-/* User preference respect */
-@media (prefers-reduced-motion: reduce){
-  *, *::before, *::after{ animation:none !important; transition:none !important; }
-}
-
-/* ============================================================
-   INSTALLED APP (TWA/PWA) = PERFORMANCE MODE (FIX 3b)
-   Browser-এ খুললে full mode (effects অক্ষত); installed app-এ blur off
-   ============================================================ */
-@media (display-mode: standalone){
-  *,*::before,*::after{
-    backdrop-filter:none !important;
-    -webkit-backdrop-filter:none !important;
-  }
-  .routine-wrap::before,.exam-wrap::before{animation:none !important}
-}
-
-/* ============================================================
-   HIND SILIGURI GLOBAL OVERRIDE (FINAL)
-   সব Bangla UI text → Hind Siliguri; শুধু Ayah translation serif
-   ============================================================ */
-.bn,
-:lang(bn),
-[lang="bn"],
-[style*="Anek Bangla"],
-[style*="Hind Siliguri"],
-[style*="Noto Sans Bengali"],
-h1.bn, h2.bn, h3.bn, h4.bn {
-  font-family: "Hind Siliguri", "Anek Bangla", sans-serif !important;
-  letter-spacing: 0.005em;
-  line-height: 1.65;
-}
-
-/* Headings — Hind Siliguri bold (premium clean) */
-h1.bn, h2.bn, h3.bn, h4.bn {
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.35;
-}
-
-/* Ayah translation serif-এই থাকবে (Mushaf feel) */
-.bn-serif,
-.ayah-card .translation-text {
-  font-family: "Noto Serif Bengali", "Tiro Bangla", serif !important;
 }
