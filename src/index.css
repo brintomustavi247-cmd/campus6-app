@@ -3,12 +3,14 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-bengali: "Anek Bangla", "Noto Sans Bengali", "Hind Siliguri", sans-serif;
-  --font-bengali-serif: "Tiro Bangla", "Noto Serif Bengali", serif;
+  /* ⭐ PREMIUM BANGLA: premium fonts সবার আগে (Latin এর ঠিক পরে) — যেন Bangla কখনো system font-এ না পড়ে.
+     Anek Bangla / Noto Sans Bengali আর index.html link-এ নেই, তাই stack-এর আগে রাখা অর্থহীন। */
+  --font-bengali: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
+  --font-bengali-serif: "Noto Serif Bengali", "Tiro Bangla", serif;
   --font-arabic: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
-  --font-display: "Lexend", "Anek Bangla", "Noto Sans Bengali", sans-serif;
-  --font-sans: "Plus Jakarta Sans", "Anek Bangla", "Noto Sans Bengali", sans-serif;
-  --font-body: "Plus Jakarta Sans", "Anek Bangla", "Noto Sans Bengali", sans-serif;
+  --font-display: "Lexend", "Noto Serif Bengali", "Tiro Bangla", serif;
+  --font-sans: "Plus Jakarta Sans", "Hind Siliguri", "Noto Sans Bengali", sans-serif;
+  --font-body: "Plus Jakarta Sans", "Hind Siliguri", "Noto Sans Bengali", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --font-orbitron: "Orbitron", sans-serif;
   --font-rajdhani: "Rajdhani", sans-serif;
