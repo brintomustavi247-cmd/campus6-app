@@ -1500,34 +1500,7 @@ button {
   background: var(--p-cyan);
   color: #090C11;
 }
-/* ============================================================
-   HIND SILIGURI GLOBAL OVERRIDE (FINAL)
-   সব Bangla UI text → Hind Siliguri; শুধু Ayah translation serif
-   ============================================================ */
-.bn,
-:lang(bn),
-[lang="bn"],
-[style*="Anek Bangla"],
-[style*="Hind Siliguri"],
-[style*="Noto Sans Bengali"],
-h1.bn, h2.bn, h3.bn, h4.bn {
-  font-family: "Hind Siliguri", "Anek Bangla", sans-serif !important;
-  letter-spacing: 0.005em;
-  line-height: 1.65;
-}
 
-/* Headings — Hind Siliguri bold (premium clean) */
-h1.bn, h2.bn, h3.bn, h4.bn {
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.35;
-}
-
-/* Ayah translation serif-এই থাকবে (Mushaf feel) */
-.bn-serif,
-.ayah-card .translation-text {
-  font-family: "Noto Serif Bengali", "Tiro Bangla", serif !important;
-}
 
 .profile-premium::before {
   content: '';
@@ -1754,4 +1727,33 @@ html[data-perf="lite"] .exam-wrap::before{ display:none !important; }
     -webkit-backdrop-filter:none !important;
   }
   .routine-wrap::before,.exam-wrap::before{animation:none !important}
+}
+
+/* ============================================================
+   HIND SILIGURI GLOBAL OVERRIDE (FINAL)
+   সব Bangla UI text → Hind Siliguri; শুধু Ayah translation serif
+   ============================================================ */
+.bn,
+:lang(bn),
+[lang="bn"],
+[style*="Anek Bangla"],
+[style*="Hind Siliguri"],
+[style*="Noto Sans Bengali"],
+h1.bn, h2.bn, h3.bn, h4.bn {
+  font-family: "Hind Siliguri", "Anek Bangla", sans-serif !important;
+  letter-spacing: 0.005em;
+  line-height: 1.65;
+}
+
+/* Headings — Hind Siliguri bold (premium clean) */
+h1.bn, h2.bn, h3.bn, h4.bn {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+/* Ayah translation serif-এই থাকবে (Mushaf feel) */
+.bn-serif,
+.ayah-card .translation-text {
+  font-family: "Noto Serif Bengali", "Tiro Bangla", serif !important;
 }
