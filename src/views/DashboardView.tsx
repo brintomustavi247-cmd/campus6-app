@@ -177,21 +177,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <p className="text-[10px] font-bold bn" style={{ color: 'rgba(251,191,36,0.85)', fontFamily: "'Anek Bangla', sans-serif", letterSpacing: '0.08em' }}>
                 ✦ {getGreeting()},
               </p>
-              <h1
-                className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold truncate mt-1"
-                style={{
-                  fontFamily: "'Lexend', 'Anek Bangla', sans-serif",
-                  letterSpacing: '-0.02em',
-                  lineHeight: 1.15,
-                  background: 'linear-gradient(100deg, #F8FAFC 0%, #E2E8F0 45%, #FBBF24 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 0 18px rgba(251,191,36,0.15))',
-                }}
-              >
-                {profile.nickname || 'শিক্ষার্থী'}
-              </h1>
+              {(() => {
+                const displayName = profile.nickname || 'শিক্ষার্থী';
+                const isBnName = /[\u0980-\u09FF]/.test(displayName);
+                return (
+                  <h1
+                    className="text-2xl sm:text-3xl lg:text-[32px] truncate mt-1"
+                    style={{
+                      fontFamily: isBnName
+                        ? "'Hind Siliguri', 'Anek Bangla', sans-serif"
+                        : "'Azonix', 'Michroma', 'Orbitron', sans-serif",
+                      fontWeight: isBnName ? 700 : 400,
+                      letterSpacing: isBnName ? '-0.01em' : '0.08em',
+                      textTransform: isBnName ? 'none' : 'uppercase',
+                      lineHeight: 1.2,
+                      background: 'linear-gradient(100deg, #F8FAFC 0%, #E2E8F0 45%, #FBBF24 100%)',
+                      WebkitBackgroundClip: 'text',
+                      backgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      filter: 'drop-shadow(0 0 18px rgba(251,191,36,0.15))',
+                    }}
+                  >
+                    {displayName}
+                  </h1>
+                );
+              })()}
               <div className="flex flex-wrap gap-1.5 mt-2">
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bn" style={{ border: '1px solid rgba(255,255,255,0.08)', color: '#94A3B8' }}>
                   🎯 {profile.targetUniversity}
