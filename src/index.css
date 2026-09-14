@@ -1,16 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&family=Lexend:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 @theme {
-  /* ⭐ PREMIUM BANGLA: premium fonts সবার আগে (Latin এর ঠিক পরে) — যেন Bangla কখনো system font-এ না পড়ে.
-     Anek Bangla / Noto Sans Bengali আর index.html link-এ নেই, তাই stack-এর আগে রাখা অর্থহীন। */
-  --font-bengali: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
+  /* ⭐ PREMIUM BANGLA: all fonts loaded via single index.html link.
+     Fallback chains only use fonts that are actually loaded. */
+  --font-bengali: "Hind Siliguri", "Anek Bangla", "Noto Sans Bengali", sans-serif;
   --font-bengali-serif: "Noto Serif Bengali", "Tiro Bangla", serif;
   --font-arabic: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
   --font-display: "Lexend", "Noto Serif Bengali", "Tiro Bangla", serif;
-  --font-sans: "Plus Jakarta Sans", "Hind Siliguri", "Noto Sans Bengali", sans-serif;
-  --font-body: "Plus Jakarta Sans", "Hind Siliguri", "Noto Sans Bengali", sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Hind Siliguri", "Anek Bangla", sans-serif;
+  --font-body: "Plus Jakarta Sans", "Hind Siliguri", "Anek Bangla", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --font-orbitron: "Orbitron", sans-serif;
   --font-rajdhani: "Rajdhani", sans-serif;
@@ -1500,6 +1499,34 @@ button {
 .profile-premium ::selection {
   background: var(--p-cyan);
   color: #090C11;
+}
+/* ============================================================
+   HIND SILIGURI GLOBAL OVERRIDE (FINAL)
+   সব Bangla UI text → Hind Siliguri; শুধু Ayah translation serif
+   ============================================================ */
+.bn,
+:lang(bn),
+[lang="bn"],
+[style*="Anek Bangla"],
+[style*="Hind Siliguri"],
+[style*="Noto Sans Bengali"],
+h1.bn, h2.bn, h3.bn, h4.bn {
+  font-family: "Hind Siliguri", "Anek Bangla", sans-serif !important;
+  letter-spacing: 0.005em;
+  line-height: 1.65;
+}
+
+/* Headings — Hind Siliguri bold (premium clean) */
+h1.bn, h2.bn, h3.bn, h4.bn {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+/* Ayah translation serif-এই থাকবে (Mushaf feel) */
+.bn-serif,
+.ayah-card .translation-text {
+  font-family: "Noto Serif Bengali", "Tiro Bangla", serif !important;
 }
 
 .profile-premium::before {

@@ -177,7 +177,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <p className="text-[10px] font-bold bn" style={{ color: 'rgba(251,191,36,0.85)', fontFamily: "'Anek Bangla', sans-serif", letterSpacing: '0.08em' }}>
                 ✦ {getGreeting()},
               </p>
-              <h1 className="text-xl sm:text-2xl font-bold truncate mt-0.5 bn" style={{ color: '#F8FAFC', fontFamily: "'Anek Bangla', sans-serif", letterSpacing: '0.01em' }}>
+              <h1
+                className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold truncate mt-1"
+                style={{
+                  fontFamily: "'Lexend', 'Anek Bangla', sans-serif",
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.15,
+                  background: 'linear-gradient(100deg, #F8FAFC 0%, #E2E8F0 45%, #FBBF24 100%)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  filter: 'drop-shadow(0 0 18px rgba(251,191,36,0.15))',
+                }}
+              >
                 {profile.nickname || 'শিক্ষার্থী'}
               </h1>
               <div className="flex flex-wrap gap-1.5 mt-2">

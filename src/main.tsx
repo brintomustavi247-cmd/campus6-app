@@ -26,3 +26,13 @@ createRoot(document.getElementById('root')!).render(
     </PresenceProvider>
   </StrictMode>,
 );
+
+// ⭐ TEMP DEBUG — font loading verification (remove after fix confirmed)
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    console.log('[FONT-DEBUG] status:', document.fonts.status);
+    console.log('[FONT-DEBUG] Anek Bangla 700:', document.fonts.check('700 16px "Anek Bangla"'));
+    console.log('[FONT-DEBUG] Lexend 800:', document.fonts.check('800 16px "Lexend"'));
+    console.log('[FONT-DEBUG] Orbitron 700:', document.fonts.check('700 16px "Orbitron"'));
+  }, 1500);
+});

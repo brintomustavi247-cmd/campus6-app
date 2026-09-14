@@ -1,5 +1,5 @@
-// ⭐ HARD RESET v5 + NETWORK-FIRST — deploy হলেই সাথে সাথে নতুন file আসবে
-const CACHE = 'campus6-sw-v5';
+// ⭐ HARD RESET v6 + NETWORK-FIRST — deploy হলেই সাথে সাথে নতুন file আসবে
+const CACHE = 'campus6-sw-v6';
 const CORE = ['/', '/index.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
