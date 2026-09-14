@@ -1,5 +1,5 @@
-// ⭐ HARD RESET: v3 -> v4 (force old phones to drop stale caches)
-const CACHE = 'campus6-sw-v4';
+// ⭐ HARD RESET v5 + NETWORK-FIRST — deploy হলেই সাথে সাথে নতুন file আসবে
+const CACHE = 'campus6-sw-v5';
 const CORE = ['/', '/index.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
@@ -30,19 +30,37 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const network = fetch(e.request)
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+  // ⭐ Cross-origin (Google Fonts ইত্যাদি) SW দিয়ে যাবে না — সরাসরি network
+  if (url.origin !== self.location.origin) return;
+
+  // ⭐ Page navigation = NETWORK-FIRST (সবসময় নতুন HTML)
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      fetch(req)
         .then((res) => {
-          if (res && res.status === 200 && res.type === 'basic') {
-            const clone = res.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, clone));
-          }
+          const clone = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, clone));
           return res;
         })
-        .catch(() => cached || caches.match('/index.html'));
-      return cached || network;
-    })
+        .catch(() => caches.match(req).then((r) => r || caches.match('/index.html')))
+    );
+    return;
+  }
+
+  // ⭐ বাকি same-origin assets = network-first, offline-এ cache fallback
+  e.respondWith(
+    fetch(req)
+      .then((res) => {
+        if (res && res.status === 200 && res.type === 'basic') {
+          const clone = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, clone));
+        }
+        return res;
+      })
+      .catch(() => caches.match(req))
   );
 });
