@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { EmotionalPopup } from '../components/EmotionalPopup';
 import { getEmotionalNote, markActive, EmotionalNote } from '../utils/emotionalNotifications';
 import { feedbackNotif } from '../utils/alertFeedback';
+import { enablePush } from '../utils/pushSubscribe';
 import { UserProfile, DailyProgress, ClassSession } from '../types';
 import { getRoutineForDate } from '../data/routineData';
 import { DailyAyahCard } from '../components/DailyAyahCard';
@@ -74,6 +75,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   useEffect(() => {
     markActive();
+    // 🔔 Background push subscription (app বন্ধ থাকলেও notification আসবে)
+    void enablePush(profile.uid || 'anon');
     const t = setTimeout(() => {
       const n = getEmotionalNote();
       if (n) {

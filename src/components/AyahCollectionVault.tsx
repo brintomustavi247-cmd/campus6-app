@@ -34,68 +34,6 @@ const RARITY = {
 
 const BN: React.CSSProperties = { fontFamily: "'Hind Siliguri', 'Anek Bangla', sans-serif" };
 
-/* ═══ MANUAL OVERRIDE ═══ */
-const MANUAL_UCCHARON: Record<number, string> = {};
-
-/* ═══ Latin → Bangla উচ্চারণ engine ═══ */
-const CONS: [string, string][] = [
-  ['bh', 'ভ'], ['ch', 'ছ'], ['dh', 'ধ'], ['gh', 'ঘ'], ['jh', 'ঝ'], ['kh', 'খ'],
-  ['ph', 'ফ'], ['sh', 'শ'], ['th', 'থ'], ['tt', 'ট'], ['dd', 'ড'], ['nn', 'ণ'],
-  ['b', 'ব'], ['c', 'চ'], ['d', 'দ'], ['f', 'ফ'], ['g', 'গ'], ['h', 'হ'],
-  ['j', 'জ'], ['k', 'ক'], ['l', 'ল'], ['m', 'ম'], ['n', 'ন'], ['p', 'প'],
-  ['q', 'ক'], ['r', 'র'], ['s', 'স'], ['t', 'ত'], ['w', 'ও'], ['z', 'য'], ['y', 'য়'],
-];
-const VPAIRS: [string, string, string][] = [
-  ['ai', 'ৈ', 'ঐ'], ['au', 'ৌ', 'ঔ'], ['aa', 'া', 'আ'], ['ee', 'ী', 'ই'], ['oo', 'ূ', 'উ'],
-];
-const MACRON: [string, string, string][] = [
-  ['ā', 'া', 'আ'], ['ī', 'ী', 'ই'], ['ū', 'ূ', 'উ'],
-];
-const VOWELS: [string, string, string][] = [
-  ['a', '', 'অ'], ['i', 'ি', 'ই'], ['u', 'ু', 'উ'], ['e', 'ে', 'এ'], ['o', 'ো', 'ও'],
-];
-const isCons = (ch: string) => /[bcdfghjklmnpqrstvwz]/.test(ch);
-
-function wordToBangla(raw: string): string {
-  const s = raw.toLowerCase();
-  let out = '';
-  let i = 0;
-  let afterCons = false;
-  while (i < s.length) {
-    let hit = false;
-    for (const [k, v] of CONS) {
-      if (s.startsWith(k, i)) {
-        out += k === 'y' && i === 0 ? 'য' : v;
-        i += k.length;
-        if (i < s.length && isCons(s[i])) out += '্';
-        afterCons = true;
-        hit = true;
-        break;
-      }
-    }
-    if (hit) continue;
-    for (const [k, m, st] of VPAIRS) {
-      if (s.startsWith(k, i)) { out += afterCons ? m : st; i += k.length; afterCons = false; hit = true; break; }
-    }
-    if (hit) continue;
-    for (const [k, m, st] of MACRON) {
-      if (s.startsWith(k, i)) { out += afterCons ? m : st; i += 1; afterCons = false; hit = true; break; }
-    }
-    if (hit) continue;
-    for (const [k, m, st] of VOWELS) {
-      if (s.startsWith(k, i)) { out += afterCons ? m : st; i += 1; afterCons = false; hit = true; break; }
-    }
-    if (hit) continue;
-    if (s[i] === "'") { i += 1; continue; }
-    out += s[i];
-    i += 1;
-    afterCons = false;
-  }
-  return out;
-}
-
-const bnUccharon = (translit: string) => translit.split(/\s+/).map(wordToBangla).join(' ');
-
 /* ─── Floating Particle ─── */
 const Particle: React.FC<{ i: number }> = ({ i }) => {
   const style = useMemo(() => {
@@ -124,22 +62,19 @@ const CardDecor: React.FC<{ t: (typeof RARITY)[keyof typeof RARITY]; isLegendary
       <span className="absolute inset-0 rounded-[5px]" style={{ border: `1px solid ${t.chip}`, opacity: 0.5 }} />
       <span className="relative text-[11px] leading-none" style={{ color: t.chip, fontFamily: "'Amiri', serif" }}>۞</span>
     </div>
-    {/* aurora effect for legendary */}
     {isLegendary && 'aurora' in t && (
       <div className="absolute inset-0 pointer-events-none opacity-60" style={{ background: t.aurora, mixBlendMode: 'screen' }} />
     )}
   </>
 );
 
-/* ─── Collected Card — FLIP ─── */
+/* ─── Collected Card — FLIP: front = Arabic+Bangla, back = English transliteration ─── */
 const VaultCard: React.FC<{ c: CollectedAyah; i: number }> = ({ c, i }) => {
   const [flipped, setFlipped] = useState(false);
   const ayah = DAILY_AYAHS.find((a) => a.id === c.id);
   const t = RARITY[c.rarity] || RARITY.common;
   const isLegendary = c.rarity === 'legendary';
   if (!ayah) return null;
-
-  const uccharon = MANUAL_UCCHARON[ayah.id] || bnUccharon(ayah.translit);
 
   const cardStyle: React.CSSProperties = {
     background: t.bg,
@@ -208,7 +143,7 @@ const VaultCard: React.FC<{ c: CollectedAyah; i: number }> = ({ c, i }) => {
             </div>
           </div>
 
-          {/* ═══ BACK — Premium Virtual Debit Card Style ═══ */}
+          {/* ═══ BACK — Matte Black Debit Card + English Transliteration ═══ */}
           <div
             className="relative overflow-hidden rounded-[22px] flex flex-col gap-3"
             style={{
@@ -232,13 +167,11 @@ const VaultCard: React.FC<{ c: CollectedAyah; i: number }> = ({ c, i }) => {
             }}
           >
             <CardDecor t={t} />
-            
+
             {/* metallic sheen */}
             <div className="absolute inset-0 pointer-events-none opacity-30" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)' }} />
-            
             {/* inner premium ring */}
             <div className="absolute inset-2 rounded-[16px] pointer-events-none" style={{ border: `1px solid ${t.chip}25` }} />
-            
             {/* vignette */}
             <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(90% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%)' }} />
 
@@ -248,18 +181,33 @@ const VaultCard: React.FC<{ c: CollectedAyah; i: number }> = ({ c, i }) => {
               <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: t.chip, boxShadow: `0 0 8px ${t.glow}` }} />
             </div>
 
+            {/* label */}
             <div className="relative flex items-center justify-center gap-2 pr-8 mt-2">
               <span className="h-px w-6 sm:w-8" style={{ background: `linear-gradient(90deg, transparent, ${t.chip})`, opacity: 0.6 }} />
-              <span className="text-[10px] font-black tracking-[0.3em] uppercase" style={{ ...BN, color: t.chip, letterSpacing: '0.35em' }}>বাংলা উচ্চারণ</span>
+              <span className="text-[10px] font-black tracking-[0.35em] uppercase" style={{ ...BN, color: t.chip }}>উচ্চারণ · Transliteration</span>
               <span className="h-px w-6 sm:w-8" style={{ background: `linear-gradient(90deg, ${t.chip}, transparent)`, opacity: 0.6 }} />
             </div>
 
+            {/* ⭐ ENGLISH TRANSLITERATION — premium italic */}
             <div className="relative flex-1 flex items-center justify-center py-2">
-              <p className="text-center px-1" style={{ ...BN, fontSize: 'clamp(15px, 4.4vw, 18px)', fontWeight: 600, lineHeight: 2.1, color: '#F8FAFC', textShadow: `0 0 20px ${t.glow}` }}>
-                {uccharon}
+              <p
+                className="text-center px-2"
+                style={{
+                  fontFamily: "'Lexend', 'Plus Jakarta Sans', sans-serif",
+                  fontSize: 'clamp(13px, 3.9vw, 16px)',
+                  fontWeight: 500,
+                  fontStyle: 'italic',
+                  lineHeight: 2.05,
+                  letterSpacing: '0.02em',
+                  color: '#F8FAFC',
+                  textShadow: `0 0 20px ${t.glow}`,
+                }}
+              >
+                {ayah.translit}
               </p>
             </div>
 
+            {/* bangla meaning whisper */}
             <p className="relative text-center px-2" style={{ ...BN, fontSize: '10px', lineHeight: 1.6, color: 'rgba(255,255,255,0.5)' }}>
               "{ayah.bangla}"
             </p>
@@ -365,7 +313,7 @@ export const AyahCollectionVault: React.FC<{ open: boolean; onClose: () => void 
           তোমার আধ্যাত্মিক <br />সংগ্রহশালা
         </h1>
         <p className="text-[11px] mt-2 max-w-lg" style={{ ...BN, color: '#94A3B8', lineHeight: 1.7 }}>
-          প্রতিদিন login করে আজকের আয়াত সংগ্রহ করো — card-এ <span style={{ color: '#FBBF24' }}>tap করলে বাংলা উচ্চারণ</span> দেখাবে।
+          প্রতিদিন login করে আজকের আয়াত সংগ্রহ করো — card-এ <span style={{ color: '#FBBF24' }}>tap করলে উচ্চারণ</span> দেখাবে।
         </p>
 
         <div className="grid grid-cols-3 gap-3 mt-6">
