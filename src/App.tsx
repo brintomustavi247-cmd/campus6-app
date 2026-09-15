@@ -364,6 +364,22 @@ export function App() {
 
         saveLocalOnlyUserProfile(updatedProfile);
         setProfile(updatedProfile);
+        // Immediate cloud rehydrate so that after a system-level Clear Data + re-login,
+        // the account's per-day sessions are listed without needing a manual refresh.
+        // This covers the "ajker session 0 hoye jai" bug when local was wiped.
+        void (async () => {
+          try {
+            const existing = getLocalTimerSessions();
+            if (existing.length === 0) {
+              const n = await rehydrateFromSupabase(user.id);
+              if (n > 0) {
+                setTimerSessions(getLocalTimerSessions());
+                setDailyProgress(getLocalDailyProgress(getLocalIsoDate()));
+                console.log(`[App] Post-login rehydrated ${n} sessions`);
+              }
+            }
+          } catch {}
+        })();
 
         const created = await createUserInSupabaseIfNotExists({
           id: user.id,

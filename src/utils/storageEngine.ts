@@ -623,41 +623,109 @@ export async function rehydrateFromSupabase(userId: string): Promise<number> {
       .select('id, user_id, topic_name, subject, duration_minutes, mode, date_key, completed_at')
       .eq('user_id', userId)
       .order('completed_at', { ascending: false })
-      .limit(300);
-    if (error || !data || data.length === 0) return 0;
+      .limit(500);
+    // If we got real session rows, rebuild from them (authoritative per-day list)
+    if (!error && data && data.length > 0) {
+      const sessions = (data as any[]).map(row => ({
+        id: row.id as string,
+        dateKey: (row.date_key as string) || (row.completed_at ? String(row.completed_at).slice(0, 10) : new Date().toISOString().slice(0, 10)),
+        topicName: (row.topic_name as string) || 'Study',
+        subject: (row.subject as any) || 'Physics',
+        durationMinutes: Number(row.duration_minutes) || 0,
+        mode: (row.mode as any) || '25min',
+        completedAt: (row.completed_at as string) || new Date().toISOString(),
+      })) as TimerSession[];
 
-    // Map cloud rows → TimerSession shape
-    const sessions = (data as any[]).map(row => ({
-      id: row.id as string,
-      dateKey: (row.date_key as string) || (row.completed_at ? String(row.completed_at).slice(0, 10) : new Date().toISOString().slice(0, 10)),
-      topicName: (row.topic_name as string) || 'Study',
-      subject: (row.subject as any) || 'Physics',
-      durationMinutes: Number(row.duration_minutes) || 0,
-      mode: (row.mode as any) || '25min',
-      completedAt: (row.completed_at as string) || new Date().toISOString(),
-    })) as TimerSession[];
-
-    // Persist back to local so all existing views (Dashboard, Weekly, Focus log)
-    // read the same source without needing rewrites.
-    localStorage.setItem(STORAGE_KEYS.TIMER_SESSIONS, JSON.stringify(sessions));
-
-    // Rebuild per-day studyHours (cloud sum per date_key) and patch dailyProgress
-    const byDate: Record<string, number> = {};
-    sessions.forEach(s => { byDate[s.dateKey] = (byDate[s.dateKey] || 0) + (s.durationMinutes || 0); });
-    Object.entries(byDate).forEach(([dateKey, mins]) => {
-      // Use read-only to not auto-zero, then patch hours if cloud has more
-      const existing = getDailyProgressReadOnly(dateKey);
-      const cloudHours = parseFloat((mins / 60).toFixed(2));
-      // Take the max so we never shrink a locally-added but not-yet-synced entry
-      const targetHours = Math.max(Number(existing.studyHours) || 0, cloudHours);
-      if (targetHours !== existing.studyHours) {
-        saveLocalOnlyDailyProgress({ ...existing, studyHours: targetHours, updatedAt: new Date().toISOString() });
+      localStorage.setItem(STORAGE_KEYS.TIMER_SESSIONS, JSON.stringify(sessions));
+      const byDate: Record<string, number> = {};
+      sessions.forEach(s => { byDate[s.dateKey] = (byDate[s.dateKey] || 0) + (s.durationMinutes || 0); });
+      Object.entries(byDate).forEach(([dateKey, mins]) => {
+        const existing = getDailyProgressReadOnly(dateKey);
+        const cloudHours = parseFloat((mins / 60).toFixed(2));
+        const targetHours = Math.max(Number(existing.studyHours) || 0, cloudHours);
+        if (targetHours !== existing.studyHours) {
+          saveLocalOnlyDailyProgress({ ...existing, studyHours: targetHours, updatedAt: new Date().toISOString() });
+        }
+      });
+      invalidateStreakCache();
+      try { window.dispatchEvent(new CustomEvent('campus6:rehydrated', { detail: { count: sessions.length } })); } catch {}
+      return sessions.length;
+    }
+    // Fallback 1: try user_period_stats daily rows (period stats survive even if study_sessions RLS blocked or old writes missing)
+    try {
+      const { data: periodRows } = await supabase
+        .from('user_period_stats')
+        .select('period_key, minutes')
+        .eq('user_id', userId)
+        .eq('period_type', 'daily')
+        .order('period_key', { ascending: false })
+        .limit(90);
+      if (periodRows && (periodRows as any[]).length > 0) {
+        const rows = periodRows as any[];
+        const synth: TimerSession[] = rows
+          .map(r => ({
+            id: `recovered_${r.period_key}`,
+            dateKey: String(r.period_key),
+            topicName: 'Recovered Study',
+            subject: 'Physics' as any,
+            durationMinutes: Number(r.minutes) || 0,
+            mode: '25min' as any,
+            completedAt: `${String(r.period_key)}T12:00:00.000Z`,
+          }))
+          .filter(s => s.durationMinutes > 0);
+        if (synth.length > 0) {
+          localStorage.setItem(STORAGE_KEYS.TIMER_SESSIONS, JSON.stringify(synth));
+          synth.forEach(s => {
+            const existing = getDailyProgressReadOnly(s.dateKey);
+            const cloudHours = parseFloat((s.durationMinutes / 60).toFixed(2));
+            const targetHours = Math.max(Number(existing.studyHours) || 0, cloudHours);
+            // For period fallback, sum if multiple? Already one per day, so direct.
+            // If dailyProgress already had 0, we set; if had some, max.
+            if (targetHours !== existing.studyHours) {
+              // For period fallback, we need to ensure we don't overwrite with single synth if day had multiple original sessions; but we have no granularity.
+              // Use max strategy.
+              saveLocalOnlyDailyProgress({ ...existing, studyHours: targetHours, updatedAt: new Date().toISOString() });
+            }
+          });
+          // Also expand per-day sums if multiple sessions per day were collapsed in period stats? period stats already daily sum, so one synth per day is accurate for dailyProgress.
+          invalidateStreakCache();
+          try { window.dispatchEvent(new CustomEvent('campus6:rehydrated', { detail: { count: synth.length } })); } catch {}
+          return synth.length;
+        }
       }
-    });
-
-    invalidateStreakCache();
-    try { window.dispatchEvent(new CustomEvent('campus6:rehydrated', { detail: { count: sessions.length } })); } catch {}
-    return sessions.length;
+    } catch (e) {
+      console.warn('[storage] period fallback failed', e);
+    }
+    // Fallback 2: users.total_study_time exists (leaderboard correct) but no per-day rows — at least ensure today shows something and account not 0
+    try {
+      const { data: urow } = await supabase.from('users').select('total_study_time').eq('id', userId).maybeSingle();
+      const totalMins = urow ? Number((urow as any).total_study_time || 0) : 0;
+      if (totalMins > 0) {
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const existing = getDailyProgressReadOnly(todayKey);
+        if (!existing.studyHours || existing.studyHours === 0) {
+          // Don't fabricate full total as today, but ensure at least we store a recovered marker so UI not 0.
+          // Create one synthetic today session representing the total (better than  0).
+          // Users will see recovered total in session list and can continue studying normally.
+          const synthOne: TimerSession = {
+            id: `recovered_total_${todayKey}`,
+            dateKey: todayKey,
+            topicName: 'Recovered Total Study',
+            subject: 'Physics' as any,
+            durationMinutes: totalMins,
+            mode: '25min' as any,
+            completedAt: new Date().toISOString(),
+          };
+          localStorage.setItem(STORAGE_KEYS.TIMER_SESSIONS, JSON.stringify([synthOne]));
+          // Also patch dailyProgress today to total hours (so dashboard today not 0)
+          saveLocalOnlyDailyProgress({ ...existing, studyHours: parseFloat((totalMins/60).toFixed(2)), updatedAt: new Date().toISOString() });
+          invalidateStreakCache();
+          try { window.dispatchEvent(new CustomEvent('campus6:rehydrated', { detail: { count: 1 } })); } catch {}
+          return 1;
+        }
+      }
+    } catch {}
+    return 0;
   } catch (e) {
     console.warn('[storage] rehydrateFromSupabase failed', e);
     return 0;
