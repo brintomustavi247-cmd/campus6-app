@@ -221,10 +221,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       <ConfirmationModal
         isOpen={isClearModalOpen}
-        title="সকল লোকাল ডেটা মুছে ফেলা"
-        message="আপনি কি নিশ্চিত যে লোকাল স্টোরেজে সংরক্ষিত সকল প্রোগ্রেস ও কাস্টম নোটস মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা সম্ভব হবে না।"
-        confirmLabel="হ্যাঁ, সব মুছে ফেলুন"
-        onConfirm={() => { clearAllLocalData(); onRefreshAppState(); setIsClearModalOpen(false); onAddToast('warning', 'সকল লোকাল ডেটা মুছে ফেলা হয়েছে!'); }}
+        title="লোকাল ক্যাশ মুছুন"
+        message="লোকাল ক্যাশ (offline progress) মুছে ফেলা হবে। আপনার ক্লাউডে সেভ করা study সেশন/লিডারবোর্ড/প্রোফাইল অক্ষত থাকবে এবং স্বয়ংক্রিয়ভাবে পুনরুদ্ধার হবে।"
+        confirmLabel="হ্যাঁ, ক্যাশ মুছুন"
+        onConfirm={async () => {
+          clearAllLocalData();
+          // onRefreshAppState is now cloud-aware — will rehydrate sessions from Supabase
+          await (onRefreshAppState() as any);
+          setIsClearModalOpen(false);
+          onAddToast('success', 'লোকাল ক্যাশ মুছে ফেলা হয়েছে — ক্লাউড সেশন পুনরুদ্ধার করা হয়েছে।');
+        }}
         onCancel={() => setIsClearModalOpen(false)}
       />
     </div>

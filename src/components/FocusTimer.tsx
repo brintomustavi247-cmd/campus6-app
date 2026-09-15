@@ -144,8 +144,11 @@ export const FocusTimer: React.FC<FocusTimerProps> = ({
     if (isRunning) { pauseTimer(); return; }
     if (hasPausedSession) { resumeTimer(); return; }
     const trueInitialDuration = getModeDuration(mode, customMins);
-    if (mode === '2min') {
-      startTimer(mode, topicName || 'Quick Focus Session', trueInitialDuration);
+    // Break / warmup modes never need syllabus — start immediately (Fix: 5min was incorrectly showing TopicPicker)
+    if (mode === '2min' || mode === '5min') {
+      const breakTopic = mode === '5min' ? 'Break' : (topicName || 'Quick Focus Session');
+      if (mode === '5min' && !topicName) setGlobalTopic(breakTopic);
+      startTimer(mode, breakTopic, trueInitialDuration);
       return;
     }
     if (getTopicPickerMode() === 'syllabus') {

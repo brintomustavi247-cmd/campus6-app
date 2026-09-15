@@ -11,13 +11,16 @@ import { supabase } from '../supabaseClient';
 interface Params {
   currentUserId?: string | null;
   limit?: number;
-  /** ⭐ NEW: 'daily' | 'weekly' | 'monthly' | 'all' (default 'all') */
+  /** ⭐ 'daily' | 'weekly' | 'monthly' | 'all' (default 'all') */
   period?: PeriodType;
 }
 
 /**
  * THE one hook every leaderboard screen uses.
- * v2: period support (daily/weekly/monthly) + demo activity overlay।
+ * v3 LIVE: period stats + live minutes overlay (DB live_study_minutes).
+ * - For 'all' period, basePlayers already contains DB+live effective time (via leaderboardSync v9).
+ * - For daily/weekly/monthly, we override with period minutes BUT preserve live minutes
+ *   when the player is currently in focus (fresh). That makes daily board also move live.
  */
 export function useLeaderboardPlayers({
   currentUserId,
@@ -36,7 +39,7 @@ export function useLeaderboardPlayers({
     timerRef.current = { isRunning, secondsElapsed, topicName };
   }, [isRunning, secondsElapsed, topicName]);
 
-  // ⭐ Period stats fetch + refresh
+  // ⭐ Period stats fetch + refresh (10s for live-ish daily board)
   useEffect(() => {
     let alive = true;
     const key = periodKeyFor(period);
@@ -64,7 +67,8 @@ export function useLeaderboardPlayers({
     };
 
     fetchPeriod();
-    const poll = setInterval(fetchPeriod, 30_000);
+    // Live: refresh period stats every 15s so daily board catches chunk commits quickly
+    const poll = setInterval(fetchPeriod, 15_000);
     return () => { alive = false; clearInterval(poll); };
   }, [period]);
 
@@ -93,24 +97,33 @@ export function useLeaderboardPlayers({
     };
   }, [currentUserId, limit]);
 
-  // ⭐ Merge period stats over the canonical Supabase snapshot.
+  // ⭐ Merge period stats + live overlay + re-sort (period ranks live too)
   const players = useMemo(() => {
     let list = basePlayers;
 
     if (period !== 'all') {
       list = list.map((p) => {
         const st = periodStats[p.id];
-        const minutes = st ? Math.floor(st.minutes) : 0;
-        const xp = st ? st.xp : 0;
+        const baseMinutes = st ? Math.floor(st.minutes) : 0;
+        const baseXp = st ? Math.floor(st.xp) : 0;
+        const liveAdd = p.isLive ? Number((p as any)._liveMinutes || (p as any)._dbLiveRaw || 0) : 0;
+        const minutes = baseMinutes + liveAdd;
+        const xp = baseXp + liveAdd * 10;
         return {
           ...p,
           studyTime: minutes,
           xp,
           level: Math.floor(xp / 1000) + 1,
           nextLevelXp: (Math.floor(xp / 1000) + 2) * 1000,
-          // period view-তে live overlay পরে বসবে
         } as EsportsPlayer;
       });
+      // Re-sort for period view so ranks reflect period minutes + live
+      list = [...list].sort((a, b) => {
+        if ((b.studyTime || 0) !== (a.studyTime || 0)) return (b.studyTime || 0) - (a.studyTime || 0);
+        if ((b.xp || 0) !== (a.xp || 0)) return (b.xp || 0) - (a.xp || 0);
+        return String(a.id).localeCompare(String(b.id));
+      });
+      list.forEach((p, i) => { p.rank = i + 1; });
     }
 
     return list;

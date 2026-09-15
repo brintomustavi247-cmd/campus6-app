@@ -64,7 +64,9 @@ import {
   getLocalFriends,
   addLocalFriend,
   removeLocalFriend,
-  flushPendingSyncs
+  flushPendingSyncs,
+  rehydrateFromSupabase,
+  getDailyProgressReadOnly
 } from './utils/storageEngine';
 import { PageId } from './components/Sidebar';
 import { supabase } from './supabaseClient';
@@ -688,17 +690,100 @@ export function App() {
   }, [addToast]);
 
   // ========================================================================
-  // REFRESH APP STATE (Dev Panel Helper)
+  // REFRESH APP STATE (Dev Panel Helper) — now cloud-aware
+  // After a local clear, personal sessions/daily progress are rebuilt from
+  // Supabase `study_sessions` so today's + historical days remain listed.
   // ========================================================================
 
-  const handleRefreshAppState = useCallback(() => {
+  const handleRefreshAppState = useCallback(async () => {
     setProfile(getLocalUserProfile());
     setDailyProgress(getLocalDailyProgress(selectedDateKey));
     setTimerSessions(getLocalTimerSessions());
     setSubjectsStats(getLocalSubjectStats());
     setFriends(getLocalFriends());
     console.log('[App] App state refreshed from localStorage');
-  }, [selectedDateKey]);
+
+    // If logged in but local sessions were wiped (clear → 0), rebuild from cloud.
+    try {
+      let uid = getLocalUserProfile().uid || profile.uid;
+      if (!uid || uid === DEFAULT_DEMO_USER.uid) {
+        try { const { data: { session } } = await supabase.auth.getSession(); uid = (session?.user?.id as string) || uid; } catch {}
+      }
+      if (uid && uid !== DEFAULT_DEMO_USER.uid) {
+        const localCount = getLocalTimerSessions().length;
+        // Rehydrate when local looks empty OR noticeably behind (user just cleared)
+        if (localCount === 0) {
+          const n = await rehydrateFromSupabase(uid);
+          if (n > 0) {
+            setTimerSessions(getLocalTimerSessions());
+            // Patch today's progress from the rebuilt daily store
+            setDailyProgress(getLocalDailyProgress(selectedDateKey));
+            console.log(`[App] Rehydrated ${n} sessions from Supabase after clear`);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[App] rehydrate after refresh failed', e);
+    }
+  }, [selectedDateKey, profile.uid]);
+
+  // ── AUTO-REHYDRATE after storage clear OR when local was wiped ──────
+  // Covers: Settings → Storage মুছুন, DevTools localStorage.clear(), and
+  // browser "Clear site data" where sb-* is preserved but campus6_* is gone.
+  // Runs once per uid when local sessions look empty but cloud has rows.
+  useEffect(() => {
+    let uid: string | null = profile.uid || null;
+    if (!uid || uid === DEFAULT_DEMO_USER.uid || profile.isDemo) {
+      // Fallback to Supabase session when local profile was wiped (manual clear)
+      // This lets the rehydrate still find the account after a raw localStorage.clear().
+      return;
+    }
+    if (isAuthLoading) return;
+    const localCount = getLocalTimerSessions().length;
+    if (localCount !== 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        // Double-check uid from session if local was cleared mid-flight
+        if (!uid || uid === DEFAULT_DEMO_USER.uid) {
+          try { const { data: { session } } = await supabase.auth.getSession(); uid = (session?.user?.id as string) || uid; } catch {}
+        }
+        if (!uid) return;
+        const n = await rehydrateFromSupabase(uid as string);
+        if (!cancelled && n > 0) {
+          setTimerSessions(getLocalTimerSessions());
+          setDailyProgress(getLocalDailyProgress(selectedDateKey));
+          console.log(`[App] Auto-rehydrated ${n} sessions for ${(uid as string).slice(0, 8)}…`);
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [profile.uid, profile.isDemo, isAuthLoading, selectedDateKey]);
+
+  // Also react to the explicit storage-cleared event emitted by clearAllLocalData
+  useEffect(() => {
+    const onCleared = async () => {
+      let uid = getLocalUserProfile().uid || profile.uid;
+      if (!uid || uid === DEFAULT_DEMO_USER.uid) {
+        try { const { data: { session } } = await supabase.auth.getSession(); uid = (session?.user?.id as string) || uid; } catch {}
+      }
+      if (!uid || uid === DEFAULT_DEMO_USER.uid) return;
+      try {
+        const n = await rehydrateFromSupabase(uid as string);
+        if (n > 0) {
+          setTimerSessions(getLocalTimerSessions());
+          setDailyProgress(getLocalDailyProgress(selectedDateKey));
+          addToast('success', `${n} টি সেশন ক্লাউড থেকে পুনরুদ্ধার করা হয়েছে!`, 'Rehydrated');
+        } else {
+          // Even if no sessions, still refresh UI so 0→cloud fallback shows correctly
+          setTimerSessions(getLocalTimerSessions());
+          setDailyProgress(getLocalDailyProgress(selectedDateKey));
+        }
+      } catch {}
+    };
+    window.addEventListener('campus6:storage-cleared', onCleared as EventListener);
+    return () => window.removeEventListener('campus6:storage-cleared', onCleared as EventListener);
+  }, [profile.uid, selectedDateKey, addToast]);
 
   // ========================================================================
   // 🎯 NEW #2: DEMO ENTRY HANDLER (LoginView's "Explore Demo" button)

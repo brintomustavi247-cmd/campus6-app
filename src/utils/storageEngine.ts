@@ -584,8 +584,84 @@ export function seedDemoData(): void {
   saveTimerSession(sampleTimer);
 }
 
+// ── CLOUD-AWARE CLEAR ───────────────────────────────────────────────────
+// • Preserves Supabase auth (`sb-*`) so the user stays logged in after a
+//   local clear and cloud data can be restored immediately.
+// • After wiping local cache, fires `campus6:storage-cleared` so the app can
+//   trigger a Supabase re-hydration (sessions + daily progress stay listed).
 export function clearAllLocalData(): void {
-  localStorage.clear();
+  const preserveExact = new Set<string>([
+    STORAGE_KEYS.USER_PROFILE,
+    'campus6_language',
+    'campus6_active_page',
+  ]);
+  const toRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    // Keep Supabase auth so user stays logged in; keep identity so rehydrate has uid
+    if (k.startsWith('sb-') || k.startsWith('supabase')) continue;
+    if (preserveExact.has(k)) continue;
+    toRemove.push(k);
+  }
+  toRemove.forEach(k => localStorage.removeItem(k));
+  try { window.dispatchEvent(new CustomEvent('campus6:storage-cleared')); } catch {}
+}
+
+// ── CLOUD RE-HYDRATION ──────────────────────────────────────────────────
+// Rebuilds local timer sessions + daily progress studyHours from the cloud
+// `study_sessions` personal storage so that after a local clear the account
+// still shows todays + historical sessions (per-day list) without going to 0.
+// Leaderboard already reads `users.total_study_time` (live) — this makes the
+// personal dashboards/weekly view consistent with it.
+export async function rehydrateFromSupabase(userId: string): Promise<number> {
+  if (!userId) return 0;
+  try {
+    const { supabase } = await import('../supabaseClient');
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .select('id, user_id, topic_name, subject, duration_minutes, mode, date_key, completed_at')
+      .eq('user_id', userId)
+      .order('completed_at', { ascending: false })
+      .limit(300);
+    if (error || !data || data.length === 0) return 0;
+
+    // Map cloud rows → TimerSession shape
+    const sessions = (data as any[]).map(row => ({
+      id: row.id as string,
+      dateKey: (row.date_key as string) || (row.completed_at ? String(row.completed_at).slice(0, 10) : new Date().toISOString().slice(0, 10)),
+      topicName: (row.topic_name as string) || 'Study',
+      subject: (row.subject as any) || 'Physics',
+      durationMinutes: Number(row.duration_minutes) || 0,
+      mode: (row.mode as any) || '25min',
+      completedAt: (row.completed_at as string) || new Date().toISOString(),
+    })) as TimerSession[];
+
+    // Persist back to local so all existing views (Dashboard, Weekly, Focus log)
+    // read the same source without needing rewrites.
+    localStorage.setItem(STORAGE_KEYS.TIMER_SESSIONS, JSON.stringify(sessions));
+
+    // Rebuild per-day studyHours (cloud sum per date_key) and patch dailyProgress
+    const byDate: Record<string, number> = {};
+    sessions.forEach(s => { byDate[s.dateKey] = (byDate[s.dateKey] || 0) + (s.durationMinutes || 0); });
+    Object.entries(byDate).forEach(([dateKey, mins]) => {
+      // Use read-only to not auto-zero, then patch hours if cloud has more
+      const existing = getDailyProgressReadOnly(dateKey);
+      const cloudHours = parseFloat((mins / 60).toFixed(2));
+      // Take the max so we never shrink a locally-added but not-yet-synced entry
+      const targetHours = Math.max(Number(existing.studyHours) || 0, cloudHours);
+      if (targetHours !== existing.studyHours) {
+        saveLocalOnlyDailyProgress({ ...existing, studyHours: targetHours, updatedAt: new Date().toISOString() });
+      }
+    });
+
+    invalidateStreakCache();
+    try { window.dispatchEvent(new CustomEvent('campus6:rehydrated', { detail: { count: sessions.length } })); } catch {}
+    return sessions.length;
+  } catch (e) {
+    console.warn('[storage] rehydrateFromSupabase failed', e);
+    return 0;
+  }
 }
 
 export function clearUserLocalData(): void {

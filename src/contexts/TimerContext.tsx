@@ -1234,7 +1234,7 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
             await withTimeout(
               supabase
                 .from('users')
-                .update({ live_study_minutes: 0, current_status: 'offline' })
+                .update({ live_study_minutes: 0, current_status: 'offline', updated_at: new Date().toISOString() })
                 .eq('id', uid),
               DB_TIMEOUT_MS,
               'clear-live-preview',
@@ -1265,6 +1265,7 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
             .update({
               live_study_minutes: liveMinutes,
               current_status: 'focus',
+              current_task: topicNameRef.current || null,
               updated_at: new Date().toISOString(),
             })
             .eq('id', userId),
@@ -1272,15 +1273,17 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
           'live-preview',
         );
         if (!error) {
-          console.log(`[Timer] 📡 Live preview = ${liveMinutes}min (ranked total untouched)`);
+          console.log(`[Timer] 📡 Live preview = ${liveMinutes}min (uncommitted — leaderboard will show DB+live live)`);
         }
       } catch (err) {
         console.warn('[Timer] Live preview exception:', err);
       }
     };
 
-    const first = window.setTimeout(syncLivePreview, 20_000);
-    const interval = window.setInterval(syncLivePreview, 45_000);
+    // v9 LIVE: publish quickly so leaderboard moves within seconds of starting
+    // First push after 3s (not 20s), then every 12s (not 45s) — still cheap, but feels instant.
+    const first = window.setTimeout(syncLivePreview, 3_000);
+    const interval = window.setInterval(syncLivePreview, 12_000);
 
     return () => {
       window.clearTimeout(first);

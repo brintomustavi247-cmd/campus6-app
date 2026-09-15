@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLeaderboardPlayers } from '../../hooks/useLeaderboardPlayers';
 import { EsportsPlayer } from './EsportsData';
 import { applyDemoOverlay } from '../../utils/demoActivitySimulator';
-import { PeriodType, periodKeyFor } from '../../utils/periodKeys';
-import { supabase } from '../../supabaseClient';
+import { PeriodType } from '../../utils/periodKeys';
 import { DEFAULT_AVATARS } from '../../utils/defaultAvatars';
 
 // ═══════════════════════════════════════════════════════════
@@ -246,11 +245,10 @@ export const RealtimeGlobalRanking: React.FC<{ currentUserId?: string | null }> 
   const [metric, setMetric] = useState<Metric>('study');
   const [period, setPeriod] = useState<PeriodType>('daily');
   const [showPeriodMenu, setShowPeriodMenu] = useState(false);
-  const [periodStats, setPeriodStats] = useState<Record<string, { minutes: number; xp: number }>>({});
   const [updatedAgo, setUpdatedAgo] = useState('Just now');
   const updatedAtRef = useRef<number>(Date.now());
-  const buttonRef = useRef<HTMLButtonElement | null>(null); // ⭐ NEW: button ref for positioning
-  // ⭐ useLeaderboardPlayers-এ period pass (daily/weekly/monthly stats override করে)
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  // useLeaderboardPlayers already handles period + live (v9) — no duplicate fetch needed
   const { players: basePlayers, ready } = useLeaderboardPlayers({
     currentUserId,
     period,
@@ -266,63 +264,8 @@ export const RealtimeGlobalRanking: React.FC<{ currentUserId?: string | null }> 
     return () => clearInterval(id);
   }, [basePlayers]);
 
-  // ⭐ PERIOD STATS FETCH (30s refresh — daily/weekly/monthly)
-  useEffect(() => {
-    let alive = true;
-    const key = periodKeyFor(period);
-
-    const load = async () => {
-      if (period === 'all' || !key) {
-        if (alive) setPeriodStats({});
-        return;
-      }
-      try {
-        const { data } = await supabase
-          .from('user_period_stats')
-          .select('user_id, minutes, xp')
-          .eq('period_type', period)
-          .eq('period_key', key);
-        if (!alive) return;
-        const map: Record<string, { minutes: number; xp: number }> = {};
-        (data || []).forEach((r: any) => {
-          map[r.user_id] = { minutes: Number(r.minutes || 0), xp: Number(r.xp || 0) };
-        });
-        setPeriodStats(map);
-        updatedAtRef.current = Date.now();
-      } catch (err) {
-        console.warn('[RealtimeGlobalRanking] period stats fetch failed:', err);
-      }
-    };
-
-    load();
-    const poll = setInterval(load, 30_000);
-    return () => {
-      alive = false;
-      clearInterval(poll);
-    };
-  }, [period]);
-
-  // ⭐ BUILD PLAYERS (period override + demo overlay + freshness)
-  const playersWithPeriod = useMemo(() => {
-    const list = basePlayers.map((p) => {
-      // Period override (daily/weekly/monthly হলে periodStats থেকে base)
-      if (period !== 'all') {
-        const pst = periodStats[p.id];
-        const minutes = pst ? Math.floor(pst.minutes) : 0;
-        const xp = pst ? pst.xp : 0;
-        return {
-          ...p,
-          studyTime: minutes,
-          xp,
-          level: Math.floor(xp / 1000) + 1,
-          nextLevelXp: (Math.floor(xp / 1000) + 2) * 1000,
-        } as EsportsPlayer;
-      }
-      return p;
-    });
-    // Demo overlay: public/bot players majhe-majhe পড়বে → rank নড়বে
-    return applyDemoOverlay(list);
-  }, [basePlayers, periodStats, period]);
+  // Demo overlay only — period + live already merged in hook (single source of truth)
+  const playersWithPeriod = useMemo(() => applyDemoOverlay(basePlayers), [basePlayers]);
 
   // Deterministic per-metric ranking — identical order on EVERY device.
   const ranked = useMemo(() => {

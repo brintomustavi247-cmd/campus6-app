@@ -7,6 +7,7 @@ import { UserProfile, DailyProgress, ClassSession } from '../types';
 import { getRoutineForDate } from '../data/routineData';
 import { DailyAyahCard } from '../components/DailyAyahCard';
 import { calculateStreak } from '../utils/storageEngine';
+import { useLivePersonalStats } from '../hooks/useLivePersonalStats';
 import { getClassWindow } from '../utils/classExamWindow';
 import { ProgressRing } from '../components/ProgressRing';
 import { StreakCard } from '../components/StreakCard';
@@ -91,6 +92,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const streak = calculateStreak(todayKey);
   const streakCount = (streak as any)?.count ?? (streak as any)?.current ?? (streak as any)?.days ?? 0;
 
+  // ── Cloud-backed fallback: after a local clear today's hours were 0 before.
+  // useLivePersonalStats reads Supabase `study_sessions` live, so Dashboard
+  // stays correct even before the App re-hydration finishes.
+  const uid = profile.uid && profile.uid !== 'demo-user' ? profile.uid : null;
+  const live = useLivePersonalStats(uid, todayKey);
+  const cloudHours = parseFloat(((live.stats.todayMinutes || 0) / 60).toFixed(2));
+  const displayHours = Math.max(Number(todayProgress.studyHours) || 0, cloudHours);
+  const displayProgress: DailyProgress = { ...todayProgress, studyHours: displayHours };
+
   const dateLabel = useMemo(() => {
     try {
       return new Date().toLocaleDateString('bn-BD', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -121,9 +131,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const upcomingExams = activeExams.filter((exam) => exam.status === 'upcoming');
 
   const targetHours = profile.dailyStudyTargetHours || 8;
-  const studyPct = Math.min(100, Math.round((todayProgress.studyHours / targetHours) * 100));
+  const studyPct = Math.min(100, Math.round((displayHours / targetHours) * 100));
 
-  const todayTasks = (todayProgress.customTasks || []).filter((t) => t.dateKey === todayKey);
+  const todayTasks = (displayProgress.customTasks || []).filter((t) => t.dateKey === todayKey);
   const todayTasksTotal = todayTasks.length;
   const todayTasksDone = todayTasks.filter((t) => t.completed).length;
   const taskPct = todayTasksTotal > 0 ? Math.round((todayTasksDone / todayTasksTotal) * 100) : 0;
@@ -295,10 +305,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <p className="text-3xl font-black font-mono tabular-nums leading-none" style={{ color: '#F8FAFC' }}>
-            {todayProgress.studyHours}
+            {displayHours}
             <span className="text-sm ml-1" style={{ color: '#475569' }}>h</span>
           </p>
-          <p className="text-[10px] mt-1 mb-3" style={{ color: '#475569' }}>/ {targetHours}h target</p>
+          <p className="text-[10px] mt-1 mb-3" style={{ color: '#475569' }}>/ {targetHours}h target{cloudHours > (Number(todayProgress.studyHours)||0) ? ' · cloud ✓' : ''}</p>
 
           <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
             <div
@@ -312,7 +322,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <p className="text-[10px] bn mt-3" style={{ color: '#475569' }}>
-            ফোকাস রেটিং <span className="font-black font-mono" style={{ color: '#FBBF24' }}>{todayProgress.focusRating || 8}/10</span>
+            ফোকাস রেটিং <span className="font-black font-mono" style={{ color: '#FBBF24' }}>{displayProgress.focusRating || 8}/10</span>
           </p>
         </div>
       </div>

@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { TimerSession, SubjectCategory } from '../types';
 import { FocusTimer } from '../components/FocusTimer';
 import { useGlobalTimer } from '../contexts/TimerContext';
+import { getLocalUserProfile } from '../utils/storageEngine';
 
 interface FocusTimerViewProps {
   onSessionComplete: (session: TimerSession) => void;
@@ -33,6 +34,33 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
   onSessionComplete, recentSessions, initialTopic, initialSubject,
 }) => {
   const { isRunning, secondsElapsed } = useGlobalTimer();
+  // Cloud fallback: if local recentSessions was wiped (0 after clear), show Supabase sessions so "today's session" never appears 0
+  const [cloudSessions, setCloudSessions] = React.useState<TimerSession[]>([]);
+  useEffect(() => {
+    if (recentSessions.length > 0) return;
+    let alive = true;
+    (async () => {
+      try {
+        const uid = getLocalUserProfile().uid;
+        if (!uid) return;
+        const { supabase } = await import('../supabaseClient');
+        const { data } = await supabase.from('study_sessions').select('id, topic_name, subject, duration_minutes, mode, date_key, completed_at').eq('user_id', uid).order('completed_at', { ascending: false }).limit(20);
+        if (!alive || !data) return;
+        const mapped: TimerSession[] = (data as any[]).map(r => ({
+          id: r.id as string,
+          topicName: (r.topic_name as string) || 'Study',
+          subject: (r.subject as any) || 'Physics',
+          durationMinutes: Number(r.duration_minutes) || 0,
+          mode: (r.mode as any) || '25min',
+          dateKey: (r.date_key as string) || (r.completed_at ? String(r.completed_at).slice(0,10) : new Date().toISOString().slice(0,10)),
+          completedAt: (r.completed_at as string) || new Date().toISOString(),
+        }));
+        setCloudSessions(mapped);
+      } catch {}
+    })();
+    return () => { alive = false; };
+  }, [recentSessions.length]);
+  const displaySessions: TimerSession[] = recentSessions.length > 0 ? recentSessions : cloudSessions;
 
   const [autoStarted] = useState(() => {
     const hash = window.location.hash;
@@ -44,7 +72,7 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
   });
 
   /* ⭐ LIVE: চলন্ত সেশন সহ আজকের মোট */
-  const baseMins = useMemo(() => recentSessions.reduce((a, s) => a + s.durationMinutes, 0), [recentSessions]);
+  const baseMins = useMemo(() => displaySessions.reduce((a, s) => a + s.durationMinutes, 0), [displaySessions]);
   const liveMins = isRunning ? secondsElapsed / 60 : 0;
   const totalMins = baseMins + liveMins;
   const hours = Math.floor(totalMins / 60);
@@ -58,12 +86,12 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
       const d = new Date(); d.setDate(d.getDate() - i);
       days.push({ key: d.toISOString().split('T')[0], label: bnWeek[d.getDay()], mins: 0 });
     }
-    recentSessions.forEach((s) => {
+    displaySessions.forEach((s) => {
       const slot = days.find((dd) => dd.key === s.dateKey);
       if (slot) slot.mins += s.durationMinutes;
     });
     return days;
-  }, [recentSessions]);
+  }, [displaySessions]);
   const weekMax = Math.max(60, ...week.map((w) => w.mins));
 
   return (
@@ -114,14 +142,14 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
         <section>
           <div className="flex items-center justify-between mb-3">
             <p style={MICRO}>Session Log</p>
-            <span className="text-[9px] font-mono" style={{ color: '#334155' }}>{String(recentSessions.length).padStart(2, '0')}</span>
+            <span className="text-[9px] font-mono" style={{ color: '#334155' }}>{String(displaySessions.length).padStart(2, '0')}</span>
           </div>
 
-          {recentSessions.length === 0 ? (
+          {displaySessions.length === 0 ? (
             <p className="text-[11px] bn py-6" style={{ color: '#334155' }}>এখনো কোনো সেশন সম্পন্ন হয়নি</p>
           ) : (
             <div className="space-y-0">
-              {recentSessions.slice(0, 8).map((s, idx) => {
+              {displaySessions.slice(0, 8).map((s, idx) => {
                 const color = SUBJECT_COLORS[s.subject] || '#94A3B8';
                 return (
                   <div
