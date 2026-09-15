@@ -71,9 +71,15 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
     return false;
   });
 
-  /* ⭐ LIVE: চলন্ত সেশন সহ আজকের মোট */
-  const baseMins = useMemo(() => displaySessions.reduce((a, s) => a + s.durationMinutes, 0), [displaySessions]);
-  const liveMins = isRunning ? secondsElapsed / 60 : 0;
+  /* ⭐ LIVE: চলন্ত সেশন সহ আজকের মোট — per-day only (Dhaka tz), matches DB dailyKey */
+  const todayKey = useMemo(() => {
+    try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date()); }
+    catch { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  }, []);
+  const todaySessions = useMemo(() => displaySessions.filter(s => s.dateKey === todayKey), [displaySessions, todayKey]);
+  const baseMins = useMemo(() => todaySessions.reduce((a, s) => a + s.durationMinutes, 0), [todaySessions]);
+  // Live remainder only — committed chunks already in baseMins (DB has 60s chunks), so add only unflushed seconds to avoid double-count.
+  const liveMins = isRunning ? (secondsElapsed % 60) / 60 : 0;
   const totalMins = baseMins + liveMins;
   const hours = Math.floor(totalMins / 60);
   const mins = Math.floor(totalMins % 60);
@@ -84,14 +90,23 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
     const days: { key: string; label: string; mins: number }[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
-      days.push({ key: d.toISOString().split('T')[0], label: bnWeek[d.getDay()], mins: 0 });
+      // Dhaka tz key for today bar
+      let key: string;
+      try { const tmp=new Date(); tmp.setDate(new Date().getDate()-i); key=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka'}).format(tmp); }
+      catch { key = d.toISOString().split('T')[0]; }
+      days.push({ key, label: bnWeek[new Date(key+'T00:00:00').getDay()], mins: 0 });
     }
     displaySessions.forEach((s) => {
       const slot = days.find((dd) => dd.key === s.dateKey);
       if (slot) slot.mins += s.durationMinutes;
     });
+    // Add live remainder to today's bar for live preview
+    if (isRunning) {
+      const today = days[days.length-1];
+      if (today) today.mins += (secondsElapsed % 60)/60;
+    }
     return days;
-  }, [displaySessions]);
+  }, [displaySessions, isRunning, secondsElapsed]);
   const weekMax = Math.max(60, ...week.map((w) => w.mins));
 
   return (
@@ -141,15 +156,15 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
         <section>
           <div className="flex items-center justify-between mb-3">
-            <p style={MICRO}>Session Log</p>
-            <span className="text-[9px] font-mono" style={{ color: '#334155' }}>{String(displaySessions.length).padStart(2, '0')}</span>
+            <p style={MICRO}>Session Log — Today</p>
+            <span className="text-[9px] font-mono" style={{ color: '#334155' }}>{String(todaySessions.length).padStart(2, '0')}</span>
           </div>
 
-          {displaySessions.length === 0 ? (
-            <p className="text-[11px] bn py-6" style={{ color: '#334155' }}>এখনো কোনো সেশন সম্পন্ন হয়নি</p>
+          {todaySessions.length === 0 ? (
+            <p className="text-[11px] bn py-6" style={{ color: '#334155' }}>আজ এখনো কোনো সেশন সম্পন্ন হয়নি — নিচে Recent দেখুন</p>
           ) : (
             <div className="space-y-0">
-              {displaySessions.slice(0, 8).map((s, idx) => {
+              {todaySessions.slice(0, 8).map((s, idx) => {
                 const color = SUBJECT_COLORS[s.subject] || '#94A3B8';
                 return (
                   <div
