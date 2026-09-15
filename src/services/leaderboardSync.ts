@@ -273,7 +273,7 @@ const mapRowToPlayer = (
       : 0;
 
   const liveRaw = Number((u as any).live_study_minutes ?? 0);
-  const liveMinutes = Number.isFinite(liveRaw) ? Math.max(0, Math.floor(liveRaw)) : 0;
+  const liveMinutes = Number.isFinite(liveRaw) ? Math.max(0, Math.round(liveRaw * 100) / 100) : 0;
 
   const dbXp = typeof u.xp === 'number' && Number.isFinite(u.xp) ? Math.floor(Number(u.xp)) : 0;
 
@@ -416,14 +416,17 @@ export const mergeLeaderboardData = (
     if (wantsSelfOverlay) {
       const me = mapped.find((pl) => pl._isCurrentUser);
       if (me) {
-        // live DB minutes already counted in me.studyTime; only add the still-unflushed remainder
-        const elapsedMin = Math.floor(timer!.secondsElapsed / 60);
+        // fractional gap since last live publish (max ~0.2m) — avoids double-counting committed minutes
         const liveDb = Number((me as any)._liveMinutes || 0);
-        const unsynced = Math.max(0, elapsedMin - liveDb);
-        if (unsynced > 0) {
-          (me as any).studyTime += unsynced;
-          (me as any).xp += unsynced * XP_PER_MINUTE_LIVE;
-          // keep level in sync for self preview
+        const remainderCurrent = ((timer!.secondsElapsed % 60) / 60);
+        // liveDb is uncommitted remainder (0..0.99), gap is progress since last publish
+        const unsynced = Math.max(0, remainderCurrent - (liveDb % 1));
+        // Only fractional gap needed; if liveDb already equals remainder within 0.02, unsynced ~0
+        // For safety when liveDb is stale 0 but remainder is e.g. 0.5, gap =0.5
+        const fracGap = Math.round(unsynced * 100) / 100;
+        if (fracGap > 0.01) {
+          (me as any).studyTime = Math.round(((me as any).studyTime + fracGap) * 100) / 100;
+          (me as any).xp += fracGap * XP_PER_MINUTE_LIVE;
           (me as any).level = Math.floor((me as any).xp / 1000) + 1;
           (me as any).nextLevelXp = ((me as any).level + 1) * 1000;
         }

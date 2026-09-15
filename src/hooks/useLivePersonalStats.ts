@@ -69,18 +69,22 @@ export function useLivePersonalStats(userId: string | null, todayKey?: string) {
   const stats: LiveStats = useMemo(() => {
     const totalRaw = Number(userRow?.total_study_time || 0);
     const liveRaw = Number(userRow?.live_study_minutes || 0);
-    const liveMin = Number.isFinite(liveRaw) ? Math.max(0, Math.floor(liveRaw)) : 0;
+    const liveMin = Number.isFinite(liveRaw) ? Math.max(0, Math.round(liveRaw * 100) / 100) : 0;
     const status = String(userRow?.current_status || '').toLowerCase();
     const updatedMs = userRow?.updated_at ? new Date(userRow.updated_at).getTime() : 0;
     const fresh = status === 'focus' && updatedMs > 0 && Date.now() - updatedMs < LIVE_FRESH_MS;
-    const unsynced = isRunning ? Math.max(0, Math.floor(secondsElapsed / 60) - (fresh ? liveMin : 0)) : 0;
     const effectiveLive = fresh ? liveMin : 0;
-    const totalMinutes = Math.floor(totalRaw) + effectiveLive + unsynced;
-    const xp = Math.floor(Number(userRow?.xp || 0)) + effectiveLive * 10 + unsynced * 10;
+    // fractional gap since last publish (0..0.99) — avoids double-counting committed minutes
+    const remainder = isRunning ? (secondsElapsed % 60) / 60 : 0;
+    const unsynced = isRunning ? Math.max(0, Math.round((remainder - (effectiveLive % 1)) * 100) / 100) : 0;
+    const totalMinutes = Math.round((Math.floor(totalRaw) + effectiveLive + (unsynced > 0.01 ? unsynced : 0)) * 100) / 100;
+    const xp = Math.floor(Number(userRow?.xp || 0)) + Math.round((effectiveLive + (unsynced > 0.01 ? unsynced : 0)) * 10);
     const level = Math.floor(xp / 1000) + 1;
     const isLive = fresh || isRunning;
-    const todayMinutes = todayKey ? sessions.filter((s: any) => s.date_key === todayKey).reduce((a: number, s: any) => a + Number(s.duration_minutes || 0), 0) + effectiveLive + unsynced : totalMinutes;
-    return { totalMinutes, liveMinutes: effectiveLive, unsyncedMinutes: unsynced, xp, level, rank, isLive, sessionsCount: sessions.length, todayMinutes };
+    // todayMinutes: committed sessions for today + live remainder + gap (exactly matches Focus)
+    const committedToday = todayKey ? sessions.filter((s: any) => s.date_key === todayKey).reduce((a: number, s: any) => a + Number(s.duration_minutes || 0), 0) : 0;
+    const todayMinutes = todayKey ? Math.round((committedToday + effectiveLive + (unsynced > 0.01 ? unsynced : 0)) * 100) / 100 : totalMinutes;
+    return { totalMinutes, liveMinutes: effectiveLive, unsyncedMinutes: unsynced > 0.01 ? unsynced : 0, xp, level, rank, isLive, sessionsCount: sessions.length, todayMinutes };
   }, [userRow, isRunning, secondsElapsed, rank, sessions, todayKey]);
 
   return { userRow, sessions, stats, rank };

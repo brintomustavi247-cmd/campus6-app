@@ -104,11 +104,21 @@ export function useLeaderboardPlayers({
     if (period !== 'all') {
       list = list.map((p) => {
         const st = periodStats[p.id];
-        const baseMinutes = st ? Math.floor(st.minutes) : 0;
-        const baseXp = st ? Math.floor(st.xp) : 0;
-        const liveAdd = p.isLive ? Number((p as any)._liveMinutes || (p as any)._dbLiveRaw || 0) : 0;
-        const minutes = baseMinutes + liveAdd;
-        const xp = baseXp + liveAdd * 10;
+        // keep decimals for period stats to avoid halving via floor
+        const baseMinutes = st ? Math.round(Number(st.minutes) * 100) / 100 : 0;
+        const baseXp = st ? Math.round(Number(st.xp)) : 0;
+        const rawLive = Number((p as any)._liveMinutes ?? (p as any)._dbLiveRaw ?? 0);
+        const liveAdd = p.isLive ? Math.max(0, Math.round(rawLive * 100) / 100) : 0;
+        // self fractional gap since last publish (avoids double-count; at most ~0.2m)
+        let selfGap = 0;
+        if (p._isCurrentUser && p.isLive && timerRef.current?.isRunning) {
+          const rem = (timerRef.current.secondsElapsed % 60) / 60;
+          selfGap = Math.max(0, Math.round((rem - (liveAdd % 1)) * 100) / 100);
+          if (selfGap < 0.01) selfGap = 0;
+          if (selfGap > 0.99) selfGap = 0.99;
+        }
+        const minutes = Math.round((baseMinutes + liveAdd + selfGap) * 100) / 100;
+        const xp = Math.round((baseXp + (liveAdd + selfGap) * 10));
         return {
           ...p,
           studyTime: minutes,

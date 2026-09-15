@@ -683,7 +683,9 @@ export const EsportsRanking: React.FC = () => {
       const isCurrentUser = u.id === uid;
 
       const committedMinutes = Math.max(0, Math.floor(Number(u.total_study_time || 0)));
-      const liveMinutes = Math.max(0, Math.floor(Number((u as any).live_study_minutes || 0)));
+      const committedXp = Math.max(0, Math.floor(Number(u.xp || 0)));
+      const liveRaw = Number((u as any).live_study_minutes || 0);
+      const liveMinutes = Number.isFinite(liveRaw) ? Math.max(0, Math.round(liveRaw * 100) / 100) : 0;
 
       // ⭐ LIVE FRESHNESS: stale 'focus' (crashed/closed tab) → ignore
       const updatedMs = u.updated_at ? new Date(u.updated_at).getTime() : 0;
@@ -692,11 +694,11 @@ export const EsportsRanking: React.FC = () => {
 
       // ⭐ PERIOD OVERRIDE: daily/weekly/monthly হলে period stats থেকে base
       const pst = periodStats[u.id];
-      const baseMinutes = period !== 'all' && pst ? Math.floor(pst.minutes) : committedMinutes;
-      const baseXp = period !== 'all' && pst ? Number(pst.xp || 0) : Number(u.xp || 0);
+      const baseMinutes = period !== 'all' && pst ? Math.round(Number(pst.minutes) * 100) / 100 : committedMinutes;
+      const baseXp = period !== 'all' && pst ? Math.round(Number(pst.xp || 0)) : committedXp;
 
-      const totalStudyMinutes = baseMinutes + (isStudying ? liveMinutes : 0);
-      const xp = baseXp + (isStudying ? liveMinutes * 10 : 0);
+      const totalStudyMinutes = Math.round((baseMinutes + (isStudying ? liveMinutes : 0)) * 100) / 100;
+      const xp = Math.round(baseXp + (isStudying ? liveMinutes * 10 : 0));
       const level = Math.floor(xp / 1000) + 1;
       const hasActiveTimer = isCurrentUser && timerIsRunning;
 
@@ -763,16 +765,17 @@ export const EsportsRanking: React.FC = () => {
     });
     const ranked = players.map((player, index) => ({ ...player, displayRank: index + 1 }));
 
-    // ⭐ SELF-BUMP: নিজের uncommitted minutes শুধু নিজের tile-এ add
+    // ⭐ SELF-BUMP: fractional gap only (avoids double-count; max ~0.2m)
     return ranked.map((player) => {
       if (!player._isCurrentUser || !timerIsRunning || timerSecondsElapsed <= 0) return player;
-      const dbLiveMin = (player as any)._liveDbMinutes ?? 0;
-      const unsynced = Math.max(0, Math.floor(timerSecondsElapsed / 60) - dbLiveMin);
-      if (unsynced <= 0) return player;
+      const dbLiveMin = Number((player as any)._liveDbMinutes ?? 0);
+      const remainder = (timerSecondsElapsed % 60) / 60;
+      const gap = Math.max(0, Math.round((remainder - (dbLiveMin % 1)) * 100) / 100);
+      if (gap < 0.01) return player;
       return {
         ...player,
-        studyTime: metric === 'study' ? player.studyTime + unsynced : player.studyTime,
-        xp: metric === 'xp' ? player.xp + unsynced * 10 : player.xp,
+        studyTime: metric === 'study' ? Math.round((player.studyTime + gap) * 100) / 100 : player.studyTime,
+        xp: metric === 'xp' ? player.xp + Math.round(gap * 10) : player.xp,
       };
     });
   }, [overlaidPlayers, metric, timerIsRunning, timerSecondsElapsed]);
@@ -793,13 +796,14 @@ export const EsportsRanking: React.FC = () => {
     const updatedMs = currentUserProfile.updated_at ? new Date(currentUserProfile.updated_at).getTime() : 0;
     const freshFocus = currentUserProfile.current_status === 'focus' && Date.now() - updatedMs < LIVE_FRESH_MS;
     const userIsStudying = freshFocus || p.status === 'focus';
-    const liveMinutes = Math.max(0, Math.floor(Number((currentUserProfile as any).live_study_minutes || 0)));
+    const liveRawCU = Number((currentUserProfile as any).live_study_minutes || 0);
+    const liveMinutes = Number.isFinite(liveRawCU) ? Math.max(0, Math.round(liveRawCU * 100) / 100) : 0;
 
     const pst = periodStats[uid];
-    const committed = period !== 'all' && pst ? Math.floor(pst.minutes) : Math.max(0, Math.floor(Number(currentUserProfile.total_study_time || 0)));
-    const baseXp = period !== 'all' && pst ? Number(pst.xp || 0) : Number(currentUserProfile.xp || 0);
-    const studyTime = committed + (userIsStudying ? liveMinutes : 0);
-    const xp = baseXp + (userIsStudying ? liveMinutes * 10 : 0);
+    const committed = period !== 'all' && pst ? Math.round(Number(pst.minutes) * 100) / 100 : Math.max(0, Math.floor(Number(currentUserProfile.total_study_time || 0)));
+    const baseXp = period !== 'all' && pst ? Math.round(Number(pst.xp || 0)) : Math.max(0, Math.floor(Number(currentUserProfile.xp || 0)));
+    const studyTime = Math.round((committed + (userIsStudying ? liveMinutes : 0)) * 100) / 100;
+    const xp = Math.round(baseXp + (userIsStudying ? liveMinutes * 10 : 0));
     const level = Math.floor(xp / 1000) + 1;
 
     return {

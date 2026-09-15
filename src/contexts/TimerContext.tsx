@@ -397,7 +397,7 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
       explicitDeltaSeconds?: number,
     ): Promise<number> => {
       // ⭐ 2min Start Mode = warm-up → ranked time-এ count হবে না
-      if (modeRef.current === '2min') return 0;
+      if (modeRef.current === '2min' || modeRef.current === '5min') return 0; // 2min warmup + 5min break never count toward ranked time
 
       const totalElapsed =
         explicitDeltaSeconds != null
@@ -487,8 +487,8 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
     const succeededIds = new Set<string>();
 
     for (const payload of mine) {
-      // ⭐ 2min warm-up chunks never count — purge হবে, replay নয়।
-      if (payload.mode === '2min') continue;
+      // ⭐ 2min warm-up + 5min break never count — purge হবে, replay নয়।
+      if (payload.mode === '2min' || payload.mode === '5min') continue;
 
       try {
         const success = await withTimeout(
@@ -529,7 +529,7 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
       // Second pass guard: rebuild properly without __qindex leaking forward.
       const remainingClean = pending.filter((p, idx) => {
         if (!p || p.user_id !== userId) return true;
-        if (p.mode === '2min') return false; // ⭐ warm-up chunks purge
+        if (p.mode === '2min' || p.mode === '5min') return false; // warm-up/break purge
         return !succeededIds.has(p.id || `idx:${idx}`);
       });
 
@@ -606,9 +606,9 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
         completed_at: nowIso,
       };
 
-      // ⭐ 2min warm-up: crash-queue-তেও যাবে না — ranked pipeline fully closed.
+      // ⭐ 2min/5min warm-up/break: crash-queue-তেও যাবে না — ranked pipeline fully closed.
       // (নিচের live-clear block তবুও চলবে, তাই status/live ঠিক থাকবে।)
-      if (modeRef.current !== '2min') {
+      if (modeRef.current !== '2min' && modeRef.current !== '5min') {
         try {
           const pendingSessions = JSON.parse(
             localStorage.getItem(PENDING_SESSIONS_KEY) || '[]',
@@ -761,7 +761,7 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
 
         if (userId) {
           const deltaSeconds = Math.max(0, safeElapsed - flushedSecondsRef.current);
-          const isWarmup = completedMode === '2min';
+          const isWarmup = completedMode === '2min' || completedMode === '5min'; // break also not ranked
 
           if (deltaSeconds >= 1 && !isWarmup) {
             try {
@@ -784,6 +784,8 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
 
               if (success) {
                 console.log(`[Timer] ✅ Final +${completionSession.durationMinutes}min committed`);
+                // self-heal period halving after each session
+                try { const { repairSelfPeriodStats } = await import('../services/db'); void repairSelfPeriodStats(userId); } catch {}
               } else {
                 throw new Error('final chunk push rejected');
               }
@@ -1250,7 +1252,7 @@ const notifyCompletion = useCallback((s: TimerSessionCompletion) => {
     const syncLivePreview = async () => {
       const userId = effectiveUserIdRef.current;
       if (!userId) return;
-      if (modeRef.current === '2min') return; // ⭐ warm-up live rank-এ যাবে না
+      if (modeRef.current === '2min' || modeRef.current === '5min') return; // warm-up + break never count toward live rank
 
       const totalElapsedSec = calculateElapsedSeconds();
       const uncommittedSec = Math.max(0, totalElapsedSec - flushedSecondsRef.current);

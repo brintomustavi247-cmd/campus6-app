@@ -378,6 +378,8 @@ export function App() {
                 console.log(`[App] Post-login rehydrated ${n} sessions`);
               }
             }
+            // Self-heal period stats if halved (10m →5m)
+            try { const { repairSelfPeriodStats } = await import('./services/db'); await repairSelfPeriodStats(user.id); } catch {}
           } catch {}
         })();
 
@@ -667,20 +669,25 @@ export function App() {
     saveLocalTimerSession(session);
     setTimerSessions(getLocalTimerSessions());
 
-    const currentProgress = getLocalDailyProgress(session.dateKey);
-    const addedHours = parseFloat((session.durationMinutes / 60).toFixed(2));
-    const updatedProgress: DailyProgress = {
-      ...currentProgress,
-      studyHours: parseFloat((currentProgress.studyHours + addedHours).toFixed(1)),
-      updatedAt: new Date().toISOString()
-    };
-    saveLocalDailyProgress(updatedProgress);
-
-    if (session.dateKey === selectedDateKey) {
-      setDailyProgress(updatedProgress);
+    const isBreak = session.mode === '5min' || session.mode === '2min';
+    if (!isBreak) {
+      const currentProgress = getLocalDailyProgress(session.dateKey);
+      const addedHours = parseFloat((session.durationMinutes / 60).toFixed(2));
+      const updatedProgress: DailyProgress = {
+        ...currentProgress,
+        studyHours: parseFloat((currentProgress.studyHours + addedHours).toFixed(1)),
+        updatedAt: new Date().toISOString()
+      };
+      saveLocalDailyProgress(updatedProgress);
+      if (session.dateKey === selectedDateKey) {
+        setDailyProgress(updatedProgress);
+      }
+    } else {
+      console.log('[App] Break session not counted toward studyHours');
     }
 
-    addToast('success', `🎉 মাশাল্লাহ! ${session.durationMinutes} মিনিটের সেশন সফলভাবে সম্পন্ন হয়েছে!`);
+    const okMsg = isBreak ? `☕ ব্রেক শেষ!` : `🎉 মাশাল্লাহ! ${session.durationMinutes} মিনিটের সেশন সফলভাবে সম্পন্ন হয়েছে!`;
+    addToast('success', okMsg);
 
     console.log('[App] Session saved locally. DB write handled by TimerContext.');
   }, [selectedDateKey, addToast]);
@@ -800,6 +807,15 @@ export function App() {
     window.addEventListener('campus6:storage-cleared', onCleared as EventListener);
     return () => window.removeEventListener('campus6:storage-cleared', onCleared as EventListener);
   }, [profile.uid, selectedDateKey, addToast]);
+
+  // periodic self-repair for halved period stats (once per session)
+  useEffect(() => {
+    if (!profile.uid || profile.isDemo) return;
+    let id = setTimeout(async () => {
+      try { const { repairSelfPeriodStats } = await import('./services/db'); await repairSelfPeriodStats(profile.uid); } catch {}
+    }, 4000);
+    return () => clearTimeout(id);
+  }, [profile.uid]);
 
   // ========================================================================
   // 🎯 NEW #2: DEMO ENTRY HANDLER (LoginView's "Explore Demo" button)

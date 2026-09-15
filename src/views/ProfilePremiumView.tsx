@@ -168,15 +168,17 @@ export const ProfilePremiumView: React.FC<ProfilePremiumViewProps> = ({
   const live = useMemo(() => {
     const totalRaw = Number(dbUser?.total_study_time || 0);
     const liveRaw = Number((dbUser as any)?.live_study_minutes || 0);
-    const liveMin = Number.isFinite(liveRaw) ? Math.max(0, Math.floor(liveRaw)) : 0;
+    const liveMin = Number.isFinite(liveRaw) ? Math.max(0, Math.round(liveRaw * 100) / 100) : 0;
     const status = String(dbUser?.current_status || '').toLowerCase();
     const updatedMs = dbUser?.updated_at ? new Date(dbUser.updated_at).getTime() : 0;
     const fresh = status === 'focus' && updatedMs > 0 && Date.now() - updatedMs < LIVE_FRESH_MS;
-    // self unsynced (seconds not yet flushed to live_study_minutes)
-    const selfUnsynced = uid && isRunning ? Math.max(0, Math.floor(secondsElapsed / 60) - (fresh ? liveMin : 0)) : 0;
     const effectiveLive = fresh ? liveMin : 0;
-    const effectiveTotal = Math.floor(totalRaw) + effectiveLive + selfUnsynced;
-    const effectiveXp = Math.floor(Number(dbUser?.xp || 0)) + effectiveLive * 10 + selfUnsynced * 10;
+    // fractional gap since last publish (avoids double-count)
+    const remainder = isRunning ? (secondsElapsed % 60) / 60 : 0;
+    const gapRaw = isRunning ? Math.max(0, Math.round((remainder - (effectiveLive % 1)) * 100) / 100) : 0;
+    const selfUnsynced = gapRaw > 0.01 ? gapRaw : 0;
+    const effectiveTotal = Math.round((Math.floor(totalRaw) + effectiveLive + selfUnsynced) * 100) / 100;
+    const effectiveXp = Math.floor(Number(dbUser?.xp || 0)) + Math.round((effectiveLive + selfUnsynced) * 10);
     const level = Math.floor(effectiveXp / 1000) + 1;
     const isLive = fresh || isRunning;
     return { totalRaw, liveMin, effectiveLive, selfUnsynced, effectiveTotal, effectiveXp, level, isLive, fresh };

@@ -76,7 +76,8 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
     try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date()); }
     catch { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
   }, []);
-  const todaySessions = useMemo(() => displaySessions.filter(s => s.dateKey === todayKey), [displaySessions, todayKey]);
+  const isRankedSession = (m: string) => m !== '2min' && m !== '5min';
+  const todaySessions = useMemo(() => displaySessions.filter(s => s.dateKey === todayKey && isRankedSession(s.mode as string)), [displaySessions, todayKey]);
   const baseMins = useMemo(() => todaySessions.reduce((a, s) => a + s.durationMinutes, 0), [todaySessions]);
   // Live remainder only — committed chunks already in baseMins (DB has 60s chunks), so add only unflushed seconds to avoid double-count.
   const liveMins = isRunning ? (secondsElapsed % 60) / 60 : 0;
@@ -97,6 +98,7 @@ export const FocusTimerView: React.FC<FocusTimerViewProps> = ({
       days.push({ key, label: bnWeek[new Date(key+'T00:00:00').getDay()], mins: 0 });
     }
     displaySessions.forEach((s) => {
+      if (!isRankedSession(s.mode as string)) return;
       const slot = days.find((dd) => dd.key === s.dateKey);
       if (slot) slot.mins += s.durationMinutes;
     });
